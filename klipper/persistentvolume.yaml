@@ -1,17 +1,65 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: task-pv-volume
+  name: task-pv-volume-moonraker
   labels:
     type: local
 spec:
-  storageClassName: manual
+  storageClassName: manual-moonraker
   capacity:
-    storage: 3Gi
+    storage: 1Gi
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: "/mnt/data"
+    path: "/mnt/data/klipper/moonraker"
+  persistentVolumeReclaimPolicy: Retain
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - peuleu-worker1
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: task-pv-volume-klipper
+  labels:
+    type: local
+spec:
+  storageClassName: manual-klipper
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data/klipper/klipper"
+  persistentVolumeReclaimPolicy: Retain
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - peuleu-worker1
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: task-pv-volume-gcode
+  labels:
+    type: local
+spec:
+  storageClassName: manual-gcode
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data/klipper/gcode"
   persistentVolumeReclaimPolicy: Retain
   nodeAffinity:
     required:

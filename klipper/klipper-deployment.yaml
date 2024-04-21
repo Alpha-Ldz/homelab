@@ -24,8 +24,15 @@ spec:
         io.kompose.network/klipper-web-control-docker-default: "true"
         io.kompose.service: klipper
     spec:
+      initContainers:
+        - name: init-copy-config
+          image: alphaldz/klipper_moonraker:latest
+          command: ["/bin/sh", "-c", "if [ -z \"$(ls -A /mnt/config)\" ]; then cp -r /home/klippy/.config/* /mnt/config/; fi"]
+          volumeMounts:
+            - mountPath: /mnt/config/
+              name: klipper-claim1
       containers:
-        - image: dimalo/klipper-moonraker
+        - image: alphaldz/klipper_moonraker:latest
           name: klipper
           ports:
             - containerPort: 7125
@@ -35,6 +42,8 @@ spec:
             capabilities:
               add:
                 - SYS_NICE
+            privileged: true
+
           volumeMounts:
             - mountPath: /home/klippy/gcode_files
               name: gcode-files
@@ -42,6 +51,8 @@ spec:
               name: klipper-claim1
             - mountPath: /home/klippy/.moonraker_database
               name: moonraker-data
+            - name: usb-device
+              mountPath: /dev/ttyUSB0
       nodeName: peuleu-worker1
       restartPolicy: Always
       volumes:
@@ -54,3 +65,23 @@ spec:
         - name: moonraker-data
           persistentVolumeClaim:
             claimName: moonraker-data
+        - name: usb-device
+          hostPath:
+            path: /dev/ttyUSB0
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.32.0 (HEAD)
+  labels:
+    io.kompose.service: klipper
+  name: klipper
+spec:
+  ports:
+    - name: "7125"
+      port: 7125
+      targetPort: 7125
+  selector:
+    io.kompose.service: klipper

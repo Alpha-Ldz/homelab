@@ -30,3 +30,20 @@ spec:
               protocol: TCP
       nodeName: peuleu-worker1
       restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.32.0 (HEAD)
+  labels:
+    io.kompose.service: mainsail
+  name: mainsail
+spec:
+  ports:
+    - name: "8011"
+      port: 8011
+      targetPort: 80
+  selector:
+    io.kompose.service: mainsail
