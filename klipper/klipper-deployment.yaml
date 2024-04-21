@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.32.0 (HEAD)
+  labels:
+    io.kompose.service: klipper
+  name: klipper
+spec:
+
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: klipper
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.32.0 (HEAD)
+      labels:
+        io.kompose.network/klipper-web-control-docker-default: "true"
+        io.kompose.service: klipper
+    spec:
+      containers:
+        - image: dimalo/klipper-moonraker
+          name: klipper
+          ports:
+            - containerPort: 7125
+              hostPort: 7125
+              protocol: TCP
+          securityContext:
+            capabilities:
+              add:
+                - SYS_NICE
+          volumeMounts:
+            - mountPath: /home/klippy/gcode_files
+              name: gcode-files
+            - mountPath: /home/klippy/.config
+              name: klipper-claim1
+            - mountPath: /home/klippy/.moonraker_database
+              name: moonraker-data
+      nodeName: peuleu-worker1
+      restartPolicy: Always
+      volumes:
+        - name: gcode-files
+          persistentVolumeClaim:
+            claimName: gcode-files
+        - name: klipper-claim1
+          persistentVolumeClaim:
+            claimName: klipper-claim1
+        - name: moonraker-data
+          persistentVolumeClaim:
+            claimName: moonraker-data
