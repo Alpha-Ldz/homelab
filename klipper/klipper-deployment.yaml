@@ -27,10 +27,19 @@ spec:
       initContainers:
         - name: init-copy-config
           image: alphaldz/klipper_moonraker:latest
-          command: ["/bin/sh", "-c", "if [ -z \"$(ls -A /mnt/config)\" ]; then cp -r /home/klippy/.config/* /mnt/config/; fi"]
+          command: ["/bin/sh", "-c"]
+          args: [
+            "FOLDERS=\".bash_logout .bashrc .cache gcode_files .klipper_repo_backup klippy-env moonraker moonraker-env .profile .config klipper klipper_z_calibration .moonraker .moonraker_database .moonraker_repo_backup\"; \
+            for FOLDER in $FOLDERS; do \
+              if [ ! -d /mnt/config/$FOLDER ]; then \
+                cp -r /home/klippy/$FOLDER /mnt/config/; \
+              fi; \
+            done"
+          ]
+
           volumeMounts:
             - mountPath: /mnt/config/
-              name: klipper-claim1
+              name: klipper-claim
       containers:
         - image: alphaldz/klipper_moonraker:latest
           name: klipper
@@ -45,26 +54,16 @@ spec:
             privileged: true
 
           volumeMounts:
-            - mountPath: /home/klippy/gcode_files
-              name: gcode-files
-            - mountPath: /home/klippy/.config
-              name: klipper-claim1
-            - mountPath: /home/klippy/.moonraker_database
-              name: moonraker-data
+            - mountPath: /home/klippy/
+              name: klipper-claim
             - name: usb-device
               mountPath: /dev/ttyUSB0
       nodeName: peuleu-worker1
       restartPolicy: Always
       volumes:
-        - name: gcode-files
+        - name: klipper-claim
           persistentVolumeClaim:
-            claimName: gcode-files
-        - name: klipper-claim1
-          persistentVolumeClaim:
-            claimName: klipper-claim1
-        - name: moonraker-data
-          persistentVolumeClaim:
-            claimName: moonraker-data
+            claimName: klipper-claim
         - name: usb-device
           hostPath:
             path: /dev/ttyUSB0
