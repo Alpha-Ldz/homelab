@@ -26,27 +26,24 @@ spec:
     spec:
       initContainers:
         - name: init-copy-config
-          image: alphaldz/klipper_moonraker:latest
-          command: ["/bin/sh", "-c"]
-          args: [
-            "FOLDERS=\".bash_logout .bashrc .cache gcode_files .klipper_repo_backup klippy-env moonraker moonraker-env .profile .config klipper klipper_z_calibration .moonraker .moonraker_database .moonraker_repo_backup\"; \
-            for FOLDER in $FOLDERS; do \
-              if [ ! -d /mnt/config/$FOLDER ]; then \
-                cp -r /home/klippy/$FOLDER /mnt/config/; \
-              fi; \
-            done"
-          ]
+          image: 'alphaldz/klipper_moonraker:latest'
+          imagePullPolicy: Always
+
+          command: ['sh', '-c', '/home/klippy/init-copy-config.sh']
 
           volumeMounts:
             - mountPath: /mnt/config/
               name: klipper-claim
       containers:
-        - image: alphaldz/klipper_moonraker:latest
-          name: klipper
+        - name: klipper
+          image: 'alphaldz/klipper_moonraker:latest'
+          imagePullPolicy: Always
+
           ports:
             - containerPort: 7125
               hostPort: 7125
               protocol: TCP
+
           securityContext:
             capabilities:
               add:
@@ -58,6 +55,7 @@ spec:
               name: klipper-claim
             - name: usb-device
               mountPath: /dev/ttyUSB0
+
       nodeName: peuleu-worker1
       restartPolicy: Always
       volumes:
