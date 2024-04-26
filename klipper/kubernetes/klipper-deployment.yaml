@@ -29,11 +29,14 @@ spec:
           image: 'alphaldz/klipper_moonraker:latest'
           imagePullPolicy: Always
 
-          command: ['sh', '-c', '/home/klippy/init-copy-config.sh']
+          command: ["/bin/sh", "-c", "if [ -z \"$(ls -A /mnt/klipper/)\" ]; then cp -r /home/klippy/printer_data/config/* /mnt/klipper/; fi"]
+
 
           volumeMounts:
-            - mountPath: /mnt/config/
+            - mountPath: /mnt/klipper/
               name: klipper-claim
+            - mountPath: /mnt/moonraker/
+              name: moonraker-claim
       containers:
         - name: klipper
           image: 'alphaldz/klipper_moonraker:latest'
@@ -51,8 +54,12 @@ spec:
             privileged: true
 
           volumeMounts:
-            - mountPath: /home/klippy/
+            - mountPath: /home/klippy/gcode_files
+              name: gcode-claim
+            - mountPath: /home/klippy/printer_data/config
               name: klipper-claim
+            - mountPath: /home/klippy/.moonraker_database
+              name: moonraker-claim
             - name: usb-device
               mountPath: /dev/ttyUSB0
 
@@ -62,6 +69,12 @@ spec:
         - name: klipper-claim
           persistentVolumeClaim:
             claimName: klipper-claim
+        - name: moonraker-claim
+          persistentVolumeClaim:
+            claimName: moonraker-claim
+        - name: gcode-claim
+          persistentVolumeClaim:
+            claimName: gcode-claim
         - name: usb-device
           hostPath:
             path: /dev/ttyUSB0
