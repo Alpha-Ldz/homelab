@@ -29,8 +29,7 @@ spec:
           image: 'alphaldz/klipper_moonraker:latest'
           imagePullPolicy: Always
 
-          command: ["/bin/sh", "-c", "if [ -z \"$(ls -A /mnt/klipper/)\" ]; then cp -r /home/klippy/printer_data/config/* /mnt/klipper/; fi"]
-
+          command: ["/bin/sh", "-c", "cp -rf /home/klippy/printer_data/config/* /mnt/klipper/"]
 
           volumeMounts:
             - mountPath: /mnt/klipper/
