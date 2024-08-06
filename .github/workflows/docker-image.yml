@@ -28,5 +28,5 @@ jobs:
       - name: Build and push Docker image
         working-directory: ./klipper
         run: |
-          docker build . -t alphaldz/klipper_moonraker:latest -f ./klipper/Dockerfile
-          docker push alphaldz/klipper_moonraker:latest
+          docker buildx create --use
+          docker buildx build . --platform linux/amd64 -t alphaldz/klipper_moonraker:latest -f Dockerfile --push
