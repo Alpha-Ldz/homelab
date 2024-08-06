@@ -26,6 +26,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push Docker image
+        working-directory: ./klipper
         run: |
           docker build . -t alphaldz/klipper_moonraker:latest -f ./klipper/Dockerfile
           docker push alphaldz/klipper_moonraker:latest
