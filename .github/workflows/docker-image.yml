@@ -16,11 +16,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Ensure Docker is using Linux containers
-        run: |
-          docker info --format '{{.OSType}}' | findstr /C:"linux" >nul || echo "Docker must be switched to Linux containers manually."
-        shell: cmd
-
       - name: Log in to Docker Hub
         run: |
           echo %DOCKER_PASSWORD% | docker login --username %DOCKER_USERNAME% --password-stdin
