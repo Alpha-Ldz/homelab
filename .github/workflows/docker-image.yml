@@ -28,4 +28,4 @@ jobs:
       
       - name: Push Docker image
         working-directory: ./klipper
-        run: docker push --platform linux/amd64 alphaldz/klipper_moonraker:latest
+        run: docker push alphaldz/klipper_moonraker:latest
