@@ -1,0 +1,25 @@
+replicaCount: 1
+
+image:
+  repository: nextcloud
+  tag: 23.0.0-apache
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    memory: "2Gi"
+    cpu: "1000m"
+  limits:
+    memory: "4Gi"
+    cpu: "2000m"
+
+service:
+  type: ClusterIP
+  port: 80
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 100Gi
+  storageClass: nfs
+
