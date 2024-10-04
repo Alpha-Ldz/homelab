@@ -54,7 +54,8 @@ RUN ln -sf klipper_z_calibration/z_calibration.py klipper/klippy/extras/z_calibr
 RUN [ ! -d ${KLIPPER_VENV_DIR} ] && python3 -m venv ${KLIPPER_VENV_DIR}
 
 WORKDIR ${HOME}/klipper
-RUN ${KLIPPER_VENV_DIR}/bin/pip install wheel && \
+RUN ${KLIPPER_VENV_DIR}/bin/pip install numpy && \
+    ${KLIPPER_VENV_DIR}/bin/pip install wheel && \
     ${KLIPPER_VENV_DIR}/bin/pip install --no-cache-dir -f ${WHEELS} -r scripts/klippy-requirements.txt
 RUN ${KLIPPER_VENV_DIR}/bin/python klippy/chelper/__init__.py
 RUN ${KLIPPER_VENV_DIR}/bin/python -m compileall klippy
@@ -91,6 +92,13 @@ RUN apt-get update && \
     libtiff5 \
     locales \
     rsync \
+    make \
+    gcc \
+    g++ \
+    gcc-arm-none-eabi \
+    python3-numpy \
+    python3-matplotlib \
+    libatlas-base-dev \
     supervisor \
     zlib1g-dev && \
     sed -i -e 's/# en_GB.UTF-8 UTF-8/en_GB.UTF-8 UTF-8/' /etc/locale.gen && \
@@ -128,8 +136,8 @@ COPY --chown=${USER}:${USER} --from=builder ${WHEELS} ${WHEELS}
 
 RUN pip install --no-index -f ${WHEELS} supervisord-dependent-startup gpiod numpy matplotlib && \
     mkdir -p /usr/lib/python3 && \
-    ln -s /usr/local/lib/python3.10/site-packages /usr/lib/python3/dist-packages && \
-    rm -Rf ${WHEELS}
+    ln -s /usr/local/lib/python3.10/site-packages /usr/lib/python3/dist-packages
+    #rm -Rf ${WHEELS}
 
 USER ${USER}
 WORKDIR ${HOME}

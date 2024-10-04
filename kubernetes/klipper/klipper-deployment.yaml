@@ -61,6 +61,8 @@ spec:
               name: moonraker-claim
             - name: usb-device
               mountPath: /dev/ttyUSB0
+            - name: usb-input-shaper
+              mountPath: /dev/ttyACM0
 
       nodeName: peuleu-worker1
       restartPolicy: Always
@@ -76,7 +78,10 @@ spec:
             claimName: gcode-claim
         - name: usb-device
           hostPath:
-            path: /dev/ttyUSB0
+            path: /dev/serial/by-id/usb-1a86_USB_Serial-if00-port0
+        - name: usb-input-shaper
+          hostPath:
+            path: /dev/serial/by-id/usb-Klipper_rp2040_E6635C469F8C3037-if00
 ---
 apiVersion: v1
 kind: Service
