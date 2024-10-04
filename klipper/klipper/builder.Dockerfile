@@ -24,6 +24,7 @@ RUN apt-get update && \
 	curl \
 	gzip \
 	tar \
+    mkdir \
 	${PKGLIST}
 
 RUN sed -i -e 's/# en_GB.UTF-8 UTF-8/en_GB.UTF-8 UTF-8/' /etc/locale.gen
