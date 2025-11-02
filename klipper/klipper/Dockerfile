@@ -61,6 +61,7 @@ RUN ${KLIPPER_VENV_DIR}/bin/python klippy/chelper/__init__.py
 RUN ${KLIPPER_VENV_DIR}/bin/python -m compileall klippy
 
 COPY klipper/.config_linux_mcu ./.config
+USER root
 RUN make
 
 WORKDIR ${HOME}
