@@ -22,21 +22,18 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push Docker images
+      - name: Build Docker amd64 images
         working-directory: ./klipper
-        run: |
-          # Build amd64 image
-          docker buildx build \
-            --platform linux/amd64 \
-            --no-cache \
-            -t alphaldz/klipper_moonraker:latest-amd64 \
-            -f Dockerfile \
-            --push .
+        run: docker build --platform linux/amd64 --no-cache -t alphaldz/klipper_moonraker:latest-amd64 -f ./klipper/Dockerfile .
 
-          # Build arm64 image
-          docker buildx build \
-            --platform linux/arm64 \
-            --no-cache \
-            -t alphaldz/klipper_moonraker:latest-arm64 \
-            -f Dockerfile \
-            --push .
+      - name: Push Docker amd64 images
+        working-directory: ./klipper
+        run: docker push alphaldz/klipper_moonraker:latest-amd64
+        
+      - name: Build Docker arm64 images
+        working-directory: ./klipper
+        run: docker build --platform linux/arm64 --no-cache -t alphaldz/klipper_moonraker:latest-arm64 -f ./klipper/Dockerfile .
+
+      - name: Push Docker arm64 images
+        working-directory: ./klipper
+        run: docker push alphaldz/klipper_moonraker:latest-arm64
