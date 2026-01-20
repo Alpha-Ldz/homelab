@@ -26,10 +26,15 @@ spec:
     spec:
       initContainers:
         - name: init-copy-config
-          image: 'alphaldz/klipper_moonraker:latest'
+          image: 'alphaldz/klipper_moonraker:latest-arm64'
           imagePullPolicy: Always
 
-          command: ["/bin/sh", "-c", "cp -rf /home/klippy/printer_data/config/* /mnt/klipper/"]
+          command:
+            - /bin/sh
+            - -c
+            - |
+              cp -rf /home/klippy/printer_data/config/* /mnt/klipper/
+              chown -R 1000:1000 /mnt/klipper/
 
           volumeMounts:
             - mountPath: /mnt/klipper/
@@ -38,7 +43,7 @@ spec:
               name: moonraker-claim
       containers:
         - name: klipper
-          image: 'alphaldz/klipper_moonraker:latest'
+          image: 'alphaldz/klipper_moonraker:latest-arm64'
           imagePullPolicy: Always
 
           ports:
@@ -60,11 +65,11 @@ spec:
             - mountPath: /home/klippy/.moonraker_database
               name: moonraker-claim
             - name: usb-device
-              mountPath: /dev/ttyUSB0
+              mountPath: /dev/klipper-main
             - name: usb-input-shaper
-              mountPath: /dev/ttyACM0
+              mountPath: /dev/klipper-shaper
 
-      nodeName: peuleu-worker1
+      nodeName: rpi5
       restartPolicy: Always
       volumes:
         - name: klipper-claim
@@ -78,10 +83,10 @@ spec:
             claimName: gcode-claim
         - name: usb-device
           hostPath:
-            path: /dev/serial/by-id/usb-1a86_USB_Serial-if00-port0
+            path: /dev/klipper-main
         - name: usb-input-shaper
           hostPath:
-            path: /dev/serial/by-id/usb-Klipper_rp2040_E6635C469F8C3037-if00
+            path: /dev/klipper-shaper
 ---
 apiVersion: v1
 kind: Service

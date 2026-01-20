@@ -28,7 +28,7 @@ spec:
             - containerPort: 80
               hostPort: 8011
               protocol: TCP
-      nodeName: peuleu-worker1
+      nodeName: rpi5
       restartPolicy: Always
 ---
 apiVersion: v1
@@ -42,8 +42,8 @@ metadata:
   name: mainsail
 spec:
   ports:
-    - name: "8011"
-      port: 8011
+    - name: "80"
+      port: 80
       targetPort: 80
   selector:
     io.kompose.service: mainsail
@@ -65,13 +65,13 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: mainsail-home.lab
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: mainsail
-            port:
-              number: 80
+    - host: homelab.home
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mainsail
+                port:
+                  number: 80

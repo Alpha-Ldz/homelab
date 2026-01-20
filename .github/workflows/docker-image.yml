@@ -24,7 +24,7 @@ jobs:
 
       - name: Build Docker image
         working-directory: ./klipper
-        run: docker build --platform linux/amd64 --no-cache -t alphaldz/klipper_moonraker:latest -f ./klipper/Dockerfile .
+        run: docker build --platform linux/amd64 --no-cache -t alphaldz/klipper_moonraker:latest-arm -f ./klipper/Dockerfile .
       
       - name: Push Docker image
         working-directory: ./klipper

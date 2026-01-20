@@ -1,8 +1,11 @@
-FROM python:3.10-bullseye as builder
+FROM --platform=linux/arm64 python:3.10-bullseye as builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG KLIPPER_BRANCH="master"
 ARG MOONRAKER_BRANCH="master"
+
+ARG USER_UID=1000
+ARG USER_GID=1000
 
 ARG USER=klippy
 ARG HOME=/home/${USER}
@@ -12,7 +15,7 @@ ARG MOONRAKER_VENV_DIR=${HOME}/moonraker-env
 ENV WHEELS=/wheels
 ENV PYTHONUNBUFFERED=1
 
-RUN useradd -d ${HOME} -ms /bin/bash ${USER}
+RUN groupadd -g ${USER_GID} ${USER} && useradd -m -u ${USER_UID} -g ${USER} ${USER}
 RUN apt-get update && \
     apt-get install -y \
 	locales \
@@ -60,8 +63,10 @@ RUN ${KLIPPER_VENV_DIR}/bin/pip install numpy && \
 RUN ${KLIPPER_VENV_DIR}/bin/python klippy/chelper/__init__.py
 RUN ${KLIPPER_VENV_DIR}/bin/python -m compileall klippy
 
-COPY klipper/.config_linux_mcu ./.config
+COPY --chown=${USER}:${USER} klipper/.config_linux_mcu ./.config
+#USER root
 RUN make
+#USER ${USER}
 
 WORKDIR ${HOME}
 # Install moonraker
@@ -73,7 +78,7 @@ RUN ${MOONRAKER_VENV_DIR}/bin/pip install wheel gpiod && \
     ${MOONRAKER_VENV_DIR}/bin/pip install --no-cache-dir -f ${WHEELS} -r scripts/moonraker-requirements.txt
 RUN ${MOONRAKER_VENV_DIR}/bin/python -m compileall moonraker
 
-FROM python:3.10-slim-bullseye as image
+FROM --platform=linux/arm64 python:3.10-slim-bullseye as image
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -158,9 +163,9 @@ COPY --chown=${USER}:${USER} --from=builder ${KLIPPER_VENV_DIR} ${KLIPPER_VENV_D
 COPY --chown=${USER}:${USER} --from=builder ${HOME}/moonraker ${HOME}/moonraker
 COPY --chown=${USER}:${USER} --from=builder ${MOONRAKER_VENV_DIR} ${MOONRAKER_VENV_DIR}
 COPY --chown=${USER}:${USER} config ${CONFIG_DIR}
-COPY --chown=root:root klipper/run_in_venv /usr/local/bin/run_in_venv
+COPY --chown=${USER}:${USER} klipper/run_in_venv /usr/local/bin/run_in_venv
 RUN chmod +x /usr/local/bin/run_in_venv
 
-COPY klipper/supervisord.conf /etc/supervisord/conf.d/supervisord.conf
-COPY klipper/*.ini /etc/supervisord/
+COPY --chown=${USER}:${USER} klipper/supervisord.conf /etc/supervisord/conf.d/supervisord.conf
+COPY --chown=${USER}:${USER} klipper/*.ini /etc/supervisord/
 CMD ["supervisord", "-c", "/etc/supervisord/conf.d/supervisord.conf"]

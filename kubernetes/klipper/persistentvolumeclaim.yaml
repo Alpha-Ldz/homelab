@@ -5,7 +5,7 @@ metadata:
     io.kompose.service: klipper-claim
   name: klipper-claim
 spec:
-  storageClassName: klipper-manual
+  storageClassName: longhorn
   accessModes:
     - ReadWriteOnce
   resources:
@@ -19,7 +19,7 @@ metadata:
     io.kompose.service: moonraker-claim
   name: moonraker-claim
 spec:
-  storageClassName: moonraker-manual
+  storageClassName: longhorn
   accessModes:
     - ReadWriteOnce
   resources:
@@ -33,7 +33,7 @@ metadata:
     io.kompose.service: gcode-claim
   name: gcode-claim
 spec:
-  storageClassName: gcode-manual
+  storageClassName: longhorn
   accessModes:
     - ReadWriteOnce
   resources:
