@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stf
+  namespace: stf
+  labels:
+    app: stf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stf
+  template:
+    metadata:
+      labels:
+        app: stf
+    spec:
+      containers:
+        - name: stf
+          image: devicefarmer/stf:latest
+          env:
+            - name: TZ
+              value: "Europe/Paris"
+            - name: RETHINKDB_PORT_28015_TCP
+              value: "tcp://rethinkdb:28015"
+            - name: STF_ADMIN_EMAIL
+              value: "admin@homelab.local"
+            - name: STF_ADMIN_NAME
+              value: "Administrator"
+          command:
+            - sh
+            - -c
+            - |
+              apt-get update && apt-get install -y android-tools-adb && \
+              adb start-server && \
+              stf local --public-ip 192.168.1.19 --provider-min-port 7400 --provider-max-port 7500
+          ports:
+            - name: web
+              containerPort: 7100
+              protocol: TCP
+            - name: websocket
+              containerPort: 7110
+              protocol: TCP
+            - name: provider-start
+              containerPort: 7400
+              protocol: TCP
+          volumeMounts:
+            - name: usb
+              mountPath: /dev/bus/usb
+          securityContext:
+            privileged: true
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 7100
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 7100
+            initialDelaySeconds: 30
+            periodSeconds: 5
+      volumes:
+        - name: usb
+          hostPath:
+            path: /dev/bus/usb
+            type: DirectoryOrCreate
+      nodeName: rpi5
+      restartPolicy: Always
