@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reaper
+  namespace: stf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stf-reaper
+  template:
+    metadata:
+      labels:
+        app: stf-reaper
+    spec:
+      containers:
+      - name: reaper
+        image: openstf/stf:latest
+        envFrom:
+        - configMapRef:
+            name: stf-config
+        env:
+        - name: RETHINKDB_PORT_28015_TCP
+          value: "tcp://rethinkdb:28015"
+        command:
+          - stf
+          - reaper
+          - dev
+          - --connect-push
+          - tcp://triproxy:7270
+          - --connect-sub
+          - tcp://triproxy:7150
+          - --heartbeat-timeout
+          - "30000"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"

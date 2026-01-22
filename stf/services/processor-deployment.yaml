@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: processor
+  namespace: stf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stf-processor
+  template:
+    metadata:
+      labels:
+        app: stf-processor
+    spec:
+      containers:
+      - name: processor
+        image: openstf/stf:latest
+        envFrom:
+        - configMapRef:
+            name: stf-config
+        env:
+        - name: RETHINKDB_PORT_28015_TCP
+          value: "tcp://rethinkdb:28015"
+        command:
+          - stf
+          - processor
+          - proc01
+          - --connect-app-dealer
+          - tcp://triproxy:7160
+          - --connect-dev-dealer
+          - tcp://triproxy:7260
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"

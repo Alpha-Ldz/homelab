@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: triproxy
+  namespace: stf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: triproxy
+  template:
+    metadata:
+      labels:
+        app: triproxy
+    spec:
+      containers:
+      - name: triproxy
+        image: openstf/stf:latest
+        command:
+          - stf
+          - triproxy
+          - app
+          - --bind-pub
+          - tcp://*:7150
+          - --bind-dealer
+          - tcp://*:7160
+          - --bind-pull
+          - tcp://*:7170
+        ports:
+        - name: pub
+          containerPort: 7150
+          protocol: TCP
+        - name: dealer
+          containerPort: 7160
+          protocol: TCP
+        - name: pull
+          containerPort: 7170
+          protocol: TCP
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
