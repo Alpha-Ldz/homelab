@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rethinkdb
+  namespace: stf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rethinkdb
+  template:
+    metadata:
+      labels:
+        app: rethinkdb
+    spec:
+      containers:
+      - name: rethinkdb
+        image: rethinkdb:2.4
+        ports:
+        - name: cluster
+          containerPort: 29015
+          protocol: TCP
+        - name: driver
+          containerPort: 28015
+          protocol: TCP
+        - name: admin
+          containerPort: 8080
+          protocol: TCP
+        volumeMounts:
+        - name: data
+          mountPath: /data/rethinkdb_data
+        command:
+          - rethinkdb
+          - --bind
+          - all
+          - --no-http-admin
+          - --cache-size
+          - "512"  # Limiter le cache pour RPi5
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: rethinkdb-data

@@ -1,0 +1,43 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: stf
+
+resources:
+  # Base
+  - base/namespace.yaml
+  - base/configmap.yaml
+
+  # RethinkDB
+  - rethinkdb/pvc.yaml
+  - rethinkdb/deployment.yaml
+  - rethinkdb/service.yaml
+
+  # Triproxy
+  - services/triproxy-deployment.yaml
+  - services/triproxy-service.yaml
+
+  # Services STF
+  - services/storage-pvc.yaml
+  - services/storage-deployment.yaml
+  - services/storage-service.yaml
+  - services/auth-deployment.yaml
+  - services/auth-service.yaml
+  - services/api-deployment.yaml
+  - services/api-service.yaml
+  - services/websocket-deployment.yaml
+  - services/websocket-service.yaml
+  - services/app-deployment.yaml
+  - services/app-service.yaml
+  - services/processor-deployment.yaml
+  - services/reaper-deployment.yaml
+
+  # Provider
+  - provider/daemonset.yaml
+  - provider/service.yaml
+
+  # Ingress
+  - ingress/ingress.yaml
+
+# Pour déployer avec Kustomize :
+# kubectl apply -k .

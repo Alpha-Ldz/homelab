@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stf-config
+  namespace: stf
+data:
+  # RethinkDB connection
+  RETHINKDB_PORT_28015_TCP: "tcp://rethinkdb:28015"
+  RETHINKDB_ENV_AUTHKEY: ""
+
+  # Public URLs - À ajuster selon votre domaine/IP
+  STF_URL: "http://stf.local"
+  WEBSOCKET_URL: "ws://stf.local"
+
+  # Storage configuration
+  STORAGE_URL: "http://storage:3000"
+  STORAGE_PLUGIN_IMAGE_URL: "http://storage:3000"
+  STORAGE_PLUGIN_APK_URL: "http://storage:3000"
+
+  # API configuration
+  STF_API_URL: "http://api:3000"
+
+  # Provider configuration
+  PROVIDER_MIN_PORT: "15000"
+  PROVIDER_MAX_PORT: "25000"
+  PROVIDER_HEARTBEAT_INTERVAL: "10000"
+  PROVIDER_BOOT_COMPLETE_TIMEOUT: "60000"
+
+  # Triproxy configuration
+  TRIPROXY_PORT: "7160"
+
+  # App configuration
+  APP_PORT: "3000"
+
+  # Secret for auth (change in production)
+  SECRET: "change-me-in-production"

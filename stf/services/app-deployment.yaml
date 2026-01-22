@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  namespace: stf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stf-app
+  template:
+    metadata:
+      labels:
+        app: stf-app
+    spec:
+      containers:
+      - name: app
+        image: openstf/stf:latest
+        envFrom:
+        - configMapRef:
+            name: stf-config
+        env:
+        - name: RETHINKDB_PORT_28015_TCP
+          value: "tcp://rethinkdb:28015"
+        command:
+          - stf
+          - app
+          - --port
+          - "3000"
+          - --auth-url
+          - "http://auth:3000/auth/mock/"
+          - --websocket-url
+          - "$(WEBSOCKET_URL)"
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

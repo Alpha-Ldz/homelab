@@ -1,0 +1,12 @@
+# Fichiers temporaires
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs locaux
+*.log
+
+# Fichiers de configuration locaux (si vous créez des overrides)
+*-local.yaml
+*.local.yaml

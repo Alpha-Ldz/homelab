@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage
+  namespace: stf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stf-storage
+  template:
+    metadata:
+      labels:
+        app: stf-storage
+    spec:
+      containers:
+      - name: storage-temp
+        image: openstf/stf:latest
+        envFrom:
+        - configMapRef:
+            name: stf-config
+        command:
+          - stf
+          - storage-temp
+          - --port
+          - "3000"
+          - --save-dir
+          - /data
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        volumeMounts:
+        - name: storage-data
+          mountPath: /data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: storage-data
+        persistentVolumeClaim:
+          claimName: storage-data
