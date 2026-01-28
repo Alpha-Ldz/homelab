@@ -4,14 +4,15 @@ metadata:
   name: stf-ingress
   namespace: stf
   annotations:
-    kubernetes.io/ingress.class: nginx
-    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.org/proxy-body-size: "100m"
+    nginx.org/proxy-read-timeout: "3600s"
+    nginx.org/proxy-send-timeout: "3600s"
+    nginx.org/proxy-connect-timeout: "60s"
+    nginx.org/websocket-services: "stf"
 spec:
   ingressClassName: nginx
   rules:
-    - host: stf.homelab.home
+    - host: stf.freedom35.fr
       http:
         paths:
           - path: /

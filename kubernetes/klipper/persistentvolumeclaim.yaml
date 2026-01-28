@@ -1,9 +1,10 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  labels:
-    io.kompose.service: klipper-claim
   name: klipper-claim
+  namespace: klipper
+  labels:
+    app: klipper
 spec:
   storageClassName: longhorn
   accessModes:
@@ -15,9 +16,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  labels:
-    io.kompose.service: moonraker-claim
   name: moonraker-claim
+  namespace: klipper
+  labels:
+    app: klipper
 spec:
   storageClassName: longhorn
   accessModes:
@@ -29,9 +31,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  labels:
-    io.kompose.service: gcode-claim
   name: gcode-claim
+  namespace: klipper
+  labels:
+    app: klipper
 spec:
   storageClassName: longhorn
   accessModes:
@@ -39,4 +42,3 @@ spec:
   resources:
     requests:
       storage: 1Gi
----

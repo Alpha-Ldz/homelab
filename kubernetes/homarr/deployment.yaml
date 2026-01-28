@@ -1,0 +1,97 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: homarr-config
+  namespace: homarr
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: homarr-data
+  namespace: homarr
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homarr
+  namespace: homarr
+  labels:
+    app: homarr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: homarr
+  template:
+    metadata:
+      labels:
+        app: homarr
+    spec:
+      containers:
+        - name: homarr
+          image: ghcr.io/homarr-labs/homarr:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 7575
+              protocol: TCP
+          env:
+            - name: TZ
+              value: "Europe/Paris"
+            - name: SECRET_ENCRYPTION_KEY
+              value: "11c47366371a9a2b7b1e5e005c71aee59814875368e28737d3976af5e9d05cfb"
+          volumeMounts:
+            - name: config
+              mountPath: /appdata/homarr/configs
+            - name: data
+              mountPath: /appdata/homarr/data
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 7575
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 7575
+            initialDelaySeconds: 15
+            periodSeconds: 5
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: homarr-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: homarr-data
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: homarr
+  namespace: homarr
+  labels:
+    app: homarr
+spec:
+  type: ClusterIP
+  selector:
+    app: homarr
+  ports:
+    - name: http
+      port: 7575
+      targetPort: 7575
+      protocol: TCP

@@ -1,32 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.cmd: kompose convert
-    kompose.version: 1.32.0 (HEAD)
-  labels:
-    io.kompose.service: mainsail
   name: mainsail
+  namespace: klipper
+  labels:
+    app: mainsail
 spec:
   replicas: 1
   selector:
     matchLabels:
-      io.kompose.service: mainsail
+      app: mainsail
   template:
     metadata:
-      annotations:
-        kompose.cmd: kompose convert
-        kompose.version: 1.32.0 (HEAD)
       labels:
-        io.kompose.network/klipper-web-control-docker-default: "true"
-        io.kompose.service: mainsail
+        app: mainsail
     spec:
       containers:
-        - image: dimalo/mainsail
-          name: mainsail
+        - name: mainsail
+          image: dimalo/mainsail
           ports:
             - containerPort: 80
-              hostPort: 8011
               protocol: TCP
       nodeName: rpi5
       restartPolicy: Always
@@ -34,38 +27,37 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    kompose.cmd: kompose convert
-    kompose.version: 1.32.0 (HEAD)
-  labels:
-    io.kompose.service: mainsail
   name: mainsail
+  namespace: klipper
+  labels:
+    app: mainsail
 spec:
+  type: ClusterIP
   ports:
-    - name: "80"
+    - name: http
       port: 80
       targetPort: 80
   selector:
-    io.kompose.service: mainsail
+    app: mainsail
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: nginx-ingress-klippper
+  name: mainsail-ingress
   namespace: klipper
   annotations:
     kubernetes.io/ingress.class: nginx
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
-    nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "15"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
     nginx.ingress.kubernetes.io/proxy-body-size: 8m
-
+    nginx.ingress.kubernetes.io/auth-url: "http://authelia.authelia.svc.cluster.local:9091/api/verify"
+    nginx.ingress.kubernetes.io/auth-signin: "https://auth.freedom35.fr/?rd=$scheme://$host$request_uri"
+    nginx.ingress.kubernetes.io/auth-response-headers: "Remote-User,Remote-Groups,Remote-Name,Remote-Email"
 spec:
   ingressClassName: nginx
   rules:
-    - host: homelab.home
+    - host: klipper.freedom35.fr
       http:
         paths:
           - path: /

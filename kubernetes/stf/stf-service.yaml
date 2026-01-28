@@ -6,7 +6,7 @@ metadata:
   labels:
     app: stf
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: stf
   ports:
