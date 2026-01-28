@@ -1,41 +1,32 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.cmd: kompose convert
-    kompose.version: 1.32.0 (HEAD)
-  labels:
-    io.kompose.service: klipper
   name: klipper
+  namespace: klipper
+  labels:
+    app: klipper
 spec:
-
   replicas: 1
   selector:
     matchLabels:
-      io.kompose.service: klipper
+      app: klipper
   strategy:
     type: Recreate
   template:
     metadata:
-      annotations:
-        kompose.cmd: kompose convert
-        kompose.version: 1.32.0 (HEAD)
       labels:
-        io.kompose.network/klipper-web-control-docker-default: "true"
-        io.kompose.service: klipper
+        app: klipper
     spec:
       initContainers:
         - name: init-copy-config
           image: 'alphaldz/klipper_moonraker:latest-arm64'
           imagePullPolicy: Always
-
           command:
             - /bin/sh
             - -c
             - |
               cp -rf /home/klippy/printer_data/config/* /mnt/klipper/
               chown -R 1000:1000 /mnt/klipper/
-
           volumeMounts:
             - mountPath: /mnt/klipper/
               name: klipper-claim
@@ -45,18 +36,15 @@ spec:
         - name: klipper
           image: 'alphaldz/klipper_moonraker:latest-arm64'
           imagePullPolicy: Always
-
           ports:
             - containerPort: 7125
               hostPort: 7125
               protocol: TCP
-
           securityContext:
             capabilities:
               add:
                 - SYS_NICE
             privileged: true
-
           volumeMounts:
             - mountPath: /home/klippy/gcode_files
               name: gcode-claim
@@ -68,7 +56,6 @@ spec:
               mountPath: /dev/klipper-main
             - name: usb-input-shaper
               mountPath: /dev/klipper-shaper
-
       nodeName: rpi5
       restartPolicy: Always
       volumes:
@@ -91,16 +78,15 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    kompose.cmd: kompose convert
-    kompose.version: 1.32.0 (HEAD)
-  labels:
-    io.kompose.service: klipper
   name: klipper
+  namespace: klipper
+  labels:
+    app: klipper
 spec:
+  type: ClusterIP
   ports:
-    - name: "7125"
+    - name: moonraker
       port: 7125
       targetPort: 7125
   selector:
-    io.kompose.service: klipper
+    app: klipper

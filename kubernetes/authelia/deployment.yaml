@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: authelia-data
+  namespace: authelia
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authelia
+  namespace: authelia
+  labels:
+    app: authelia
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: authelia
+  template:
+    metadata:
+      labels:
+        app: authelia
+    spec:
+      containers:
+        - name: authelia
+          image: authelia/authelia:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9091
+              protocol: TCP
+          env:
+            - name: TZ
+              value: "Europe/Paris"
+            - name: X_AUTHELIA_CONFIG_FILTERS
+              value: "template"
+            - name: AUTHELIA_SESSION_SECRET_FILE
+              value: /secrets/SESSION_SECRET
+            - name: AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE
+              value: /secrets/STORAGE_ENCRYPTION_KEY
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: secrets
+              mountPath: /secrets
+              readOnly: true
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 9091
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 9091
+            initialDelaySeconds: 15
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: authelia-config
+        - name: secrets
+          secret:
+            secretName: authelia-secrets
+        - name: data
+          persistentVolumeClaim:
+            claimName: authelia-data
+      restartPolicy: Always

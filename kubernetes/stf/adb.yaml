@@ -17,7 +17,8 @@ spec:
     spec:
       containers:
         - name: adb
-          image: devicefarmer/adb:latest
+          image: adb:arm64
+          imagePullPolicy: Never
           ports:
             - name: adb
               containerPort: 5037

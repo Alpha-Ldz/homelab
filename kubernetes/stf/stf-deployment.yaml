@@ -17,7 +17,8 @@ spec:
     spec:
       containers:
         - name: stf
-          image: devicefarmer/stf:latest
+          image: stf:arm64
+          imagePullPolicy: Never
           env:
             - name: TZ
               value: "Europe/Paris"
@@ -27,13 +28,28 @@ spec:
               value: "admin@homelab.local"
             - name: STF_ADMIN_NAME
               value: "Administrator"
-          command:
-            - sh
-            - -c
-            - |
-              apt-get update && apt-get install -y android-tools-adb && \
-              adb start-server && \
-              stf local --public-ip 192.168.1.19 --provider-min-port 7400 --provider-max-port 7500
+          args:
+            - stf
+            - local
+            - --public-ip
+            - "stf.freedom35.fr"
+            - --app-url
+            - "https://stf.freedom35.fr/"
+            - --auth-url
+            - "https://stf.freedom35.fr/auth/mock/"
+            - --websocket-url
+            - "wss://stf.freedom35.fr/"
+            - --screen-ws-url-pattern
+            - "wss://stf.freedom35.fr/screens/${serial}/${publicPort}/"
+            - --allow-remote
+            - --provider-min-port
+            - "7400"
+            - --provider-max-port
+            - "7500"
+            - --adb-host
+            - adb
+            - --adb-port
+            - "5037"
           ports:
             - name: web
               containerPort: 7100
@@ -47,6 +63,21 @@ spec:
           volumeMounts:
             - name: usb
               mountPath: /dev/bus/usb
+            - name: mock-patch
+              mountPath: /app/lib/units/auth/mock.js
+              subPath: mock.js
+            - name: app-patch
+              mountPath: /app/lib/units/app/index.js
+              subPath: index.js
+            - name: websocket-patch
+              mountPath: /app/lib/units/websocket/index.js
+              subPath: index.js
+            - name: api-patch
+              mountPath: /app/lib/units/api/index.js
+              subPath: index.js
+            - name: poorxy-patch
+              mountPath: /app/lib/units/poorxy/index.js
+              subPath: index.js
           securityContext:
             privileged: true
           livenessProbe:
@@ -66,5 +97,20 @@ spec:
           hostPath:
             path: /dev/bus/usb
             type: DirectoryOrCreate
+        - name: mock-patch
+          configMap:
+            name: stf-mock-patch
+        - name: app-patch
+          configMap:
+            name: stf-app-patch
+        - name: websocket-patch
+          configMap:
+            name: stf-websocket-patch
+        - name: api-patch
+          configMap:
+            name: stf-api-patch
+        - name: poorxy-patch
+          configMap:
+            name: stf-poorxy-patch
       nodeName: rpi5
       restartPolicy: Always
