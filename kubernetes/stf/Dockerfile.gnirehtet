@@ -33,11 +33,12 @@ RUN wget https://github.com/Genymobile/gnirehtet/releases/download/${GNIREHTET_V
 # ============================================================
 FROM debian:bookworm-slim
 
-# Installation des dépendances runtime
+# Installation des dépendances runtime + ADB
 RUN apt-get update && \
     apt-get install -y \
     libssl3 \
     ca-certificates \
+    adb \
     && rm -rf /var/lib/apt/lists/*
 
 # Copier le binaire compilé (depuis relay-rust/target/release/)
