@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sms-gateway
+  namespace: sms-gateway
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Optional: Add authentication via Authelia
+    # traefik.ingress.kubernetes.io/router.middlewares: authelia-authelia@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - sms.yourdomain.com
+      secretName: sms-gateway-tls
+  rules:
+    - host: sms.yourdomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: sms-gateway
+                port:
+                  number: 8080

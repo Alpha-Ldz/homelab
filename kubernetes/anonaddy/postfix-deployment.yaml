@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postfix
+  namespace: anonaddy
+  labels:
+    app: postfix
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postfix
+  template:
+    metadata:
+      labels:
+        app: postfix
+    spec:
+      containers:
+        - name: postfix
+          image: boky/postfix:latest
+          ports:
+            - containerPort: 587
+            - containerPort: 25
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                secretKeyRef:
+                  name: anonaddy-secrets
+                  key: MAIL_HOSTNAME
+            - name: ALLOWED_SENDER_DOMAINS
+              valueFrom:
+                secretKeyRef:
+                  name: anonaddy-secrets
+                  key: MAIL_DOMAIN
+            - name: RELAYHOST
+              value: ""
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postfix
+  namespace: anonaddy
+spec:
+  selector:
+    app: postfix
+  type: LoadBalancer
+  ports:
+    - name: smtp
+      port: 25
+      targetPort: 25
+    - name: submission
+      port: 587
+      targetPort: 587
