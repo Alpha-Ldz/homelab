@@ -32,14 +32,9 @@ sudo docker run --rm --entrypoint sh "$TAG" -c "adb version" || {
     exit 1
 }
 
-# 4. TAG AVEC LE NAMESPACE COMPLET POUR CONTAINERD
-echo "4️⃣ Préparation pour containerd..."
-FULL_TAG="docker.io/library/$TAG"
-sudo docker tag "$TAG" "$FULL_TAG"
-
-# 5. IMPORTER DANS CONTAINERD
-echo "5️⃣ Import dans containerd..."
-sudo docker save "$FULL_TAG" -o "/tmp/${TAG}.tar"
+# 4. IMPORTER DANS CONTAINERD (sans préfixe docker.io/library/)
+echo "4️⃣ Import dans containerd..."
+sudo docker save "$TAG" -o "/tmp/${TAG}.tar"
 sudo ctr -n k8s.io images import "/tmp/${TAG}.tar"
 sudo rm "/tmp/${TAG}.tar"
 
@@ -47,6 +42,8 @@ sudo rm "/tmp/${TAG}.tar"
 echo "Vérification de l'image dans containerd..."
 sudo ctr -n k8s.io images ls | grep "$TAG" || {
     echo "❌ Image non trouvée dans containerd !"
+    echo "Images présentes:"
+    sudo ctr -n k8s.io images ls | grep gnirehtet || echo "Aucune"
     exit 1
 }
 
