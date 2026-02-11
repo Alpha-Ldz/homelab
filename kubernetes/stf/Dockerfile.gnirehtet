@@ -38,7 +38,7 @@ RUN apt-get update && \
     apt-get install -y \
     libssl3 \
     ca-certificates \
-    adb \
+    android-tools-adb \
     && rm -rf /var/lib/apt/lists/*
 
 # Copier le binaire compilé (depuis relay-rust/target/release/)
