@@ -45,6 +45,10 @@ spec:
             # Gnirehtet utilisera ADB sur localhost (même pod)
             - name: ADB_SERVER_SOCKET
               value: "tcp:127.0.0.1:5037"
+            - name: ANDROID_ADB_SERVER_ADDRESS
+              value: "127.0.0.1"
+            - name: ANDROID_ADB_SERVER_PORT
+              value: "5037"
 
       volumes:
         - name: usb
