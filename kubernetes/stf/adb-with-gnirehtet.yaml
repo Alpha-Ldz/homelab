@@ -27,6 +27,8 @@ spec:
           volumeMounts:
             - name: usb
               mountPath: /dev/bus/usb
+            - name: adb-keys
+              mountPath: /root/.android
           securityContext:
             privileged: true
 
@@ -34,8 +36,15 @@ spec:
         - name: gnirehtet
           image: gnirehtet:arm64
           imagePullPolicy: Never
-          command: ["/usr/local/bin/gnirehtet"]
-          args: ["run"]
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Waiting for ADB device to be ready..."
+              while ! adb devices 2>/dev/null | grep -q 'device$'; do
+                sleep 2
+              done
+              echo "ADB device ready, starting gnirehtet..."
+              exec env RUST_LOG=debug /usr/local/bin/gnirehtet run
           volumeMounts:
             - name: usb
               mountPath: /dev/bus/usb
@@ -57,6 +66,10 @@ spec:
         - name: usb
           hostPath:
             path: /dev/bus/usb
+            type: DirectoryOrCreate
+        - name: adb-keys
+          hostPath:
+            path: /home/peuleu_server/.android
             type: DirectoryOrCreate
       nodeName: rpi5
       restartPolicy: Always
