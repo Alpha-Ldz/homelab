@@ -26,7 +26,7 @@ RUN cargo build --release
 WORKDIR /build
 RUN wget https://github.com/Genymobile/gnirehtet/releases/download/${GNIREHTET_VERSION}/gnirehtet-rust-linux64-${GNIREHTET_VERSION}.zip && \
     unzip gnirehtet-rust-linux64-${GNIREHTET_VERSION}.zip && \
-    mv gnirehtet-rust-linux64-${GNIREHTET_VERSION}/gnirehtet.apk /build/gnirehtet.apk
+    mv gnirehtet-rust-linux64/gnirehtet.apk /build/gnirehtet.apk
 
 # ============================================================
 # Image finale légère
