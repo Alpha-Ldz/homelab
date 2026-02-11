@@ -32,7 +32,7 @@ spec:
 
         # Container Gnirehtet (nouveau - sidecar)
         - name: gnirehtet
-          image: gnirehtet:arm64
+          image: gnirehtet:v2
           imagePullPolicy: Never
           command: ["/usr/local/bin/gnirehtet"]
           args: ["run"]
