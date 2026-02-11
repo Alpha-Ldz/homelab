@@ -1,0 +1,47 @@
+# Multi-stage build pour compiler Gnirehtet pour ARM64
+FROM rust:1.75-bookworm as builder
+
+# Version de Gnirehtet
+ARG GNIREHTET_VERSION=v2.5.1
+
+# Installation des dépendances de build
+RUN apt-get update && \
+    apt-get install -y \
+    git \
+    build-essential \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Cloner Gnirehtet depuis GitHub
+WORKDIR /build
+RUN git clone --depth 1 --branch ${GNIREHTET_VERSION} https://github.com/Genymobile/gnirehtet.git
+
+# Compiler le binaire Rust
+WORKDIR /build/gnirehtet
+RUN cargo build --release --bin gnirehtet
+
+# Copier l'APK (nécessaire pour Gnirehtet)
+RUN cp gnirehtet.apk /build/
+
+# ============================================================
+# Image finale légère
+# ============================================================
+FROM debian:bookworm-slim
+
+# Installation des dépendances runtime
+RUN apt-get update && \
+    apt-get install -y \
+    libssl3 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copier le binaire compilé
+COPY --from=builder /build/gnirehtet/target/release/gnirehtet /usr/local/bin/gnirehtet
+COPY --from=builder /build/gnirehtet.apk /data/gnirehtet.apk
+
+# Rendre le binaire exécutable
+RUN chmod +x /usr/local/bin/gnirehtet
+
+# Point d'entrée
+ENTRYPOINT ["/usr/local/bin/gnirehtet"]
+CMD ["run"]
