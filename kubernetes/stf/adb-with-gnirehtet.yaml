@@ -49,6 +49,9 @@ spec:
               value: "127.0.0.1"
             - name: ANDROID_ADB_SERVER_PORT
               value: "5037"
+            # Ajouter le chemin d'adb au PATH
+            - name: PATH
+              value: "/usr/local/bin:/usr/bin:/bin:/usr/lib/android-sdk/platform-tools"
 
       volumes:
         - name: usb
