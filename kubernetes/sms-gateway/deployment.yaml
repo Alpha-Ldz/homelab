@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sms-gateway
+  namespace: sms-gateway
+  labels:
+    app: sms-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sms-gateway
+  template:
+    metadata:
+      labels:
+        app: sms-gateway
+    spec:
+      containers:
+        - name: sms-gateway
+          image: sms-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: SMS_ACTIVATE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sms-gateway-secrets
+                  key: SMS_ACTIVATE_API_KEY
+            - name: FIVE_SIM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sms-gateway-secrets
+                  key: FIVE_SIM_API_KEY
+            - name: DEFAULT_PROVIDER
+              valueFrom:
+                secretKeyRef:
+                  name: sms-gateway-secrets
+                  key: DEFAULT_PROVIDER
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sms-gateway
+  namespace: sms-gateway
+spec:
+  selector:
+    app: sms-gateway
+  ports:
+    - port: 8080
+      targetPort: 8080

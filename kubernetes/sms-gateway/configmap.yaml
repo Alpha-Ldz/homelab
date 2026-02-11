@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sms-gateway-config
+  namespace: sms-gateway
+data:
+  # Service codes reference for SMS-Activate:
+  # vk - VKontakte
+  # ok - Odnoklassniki
+  # wa - WhatsApp
+  # vi - Viber
+  # tg - Telegram
+  # go - Google/Gmail
+  # fb - Facebook
+  # tw - Twitter
+  # ig - Instagram
+  # ot - Others (check API docs)
+
+  SERVICE_CODES: |
+    Common service codes:
+    - vk: VKontakte
+    - ok: Odnoklassniki
+    - wa: WhatsApp
+    - vi: Viber
+    - tg: Telegram
+    - go: Google
+    - fb: Facebook
+    - tw: Twitter
+    - ig: Instagram

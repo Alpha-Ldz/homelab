@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb
+  namespace: anonaddy
+  labels:
+    app: mariadb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+        - name: mariadb
+          image: mariadb:10.11
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: anonaddy-secrets
+                  key: DB_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              value: "anonaddy"
+            - name: MYSQL_USER
+              value: "anonaddy"
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: anonaddy-secrets
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+          livenessProbe:
+            exec:
+              command:
+                - mysqladmin
+                - ping
+                - -h
+                - localhost
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - mysqladmin
+                - ping
+                - -h
+                - localhost
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: mariadb-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+  namespace: anonaddy
+spec:
+  selector:
+    app: mariadb
+  ports:
+    - port: 3306
+      targetPort: 3306
