@@ -32,25 +32,37 @@ sudo docker run --rm --entrypoint sh "$TAG" -c "adb version" || {
     exit 1
 }
 
-# 4. IMPORTER DANS CONTAINERD
-echo "4️⃣ Import dans containerd..."
-sudo docker save "$TAG" -o "/tmp/${TAG}.tar"
+# 4. TAG AVEC LE NAMESPACE COMPLET POUR CONTAINERD
+echo "4️⃣ Préparation pour containerd..."
+FULL_TAG="docker.io/library/$TAG"
+sudo docker tag "$TAG" "$FULL_TAG"
+
+# 5. IMPORTER DANS CONTAINERD
+echo "5️⃣ Import dans containerd..."
+sudo docker save "$FULL_TAG" -o "/tmp/${TAG}.tar"
 sudo ctr -n k8s.io images import "/tmp/${TAG}.tar"
 sudo rm "/tmp/${TAG}.tar"
 
-# 5. MODIFIER LE YAML TEMPORAIREMENT
-echo "5️⃣ Modification du deployment..."
+# Vérifier que l'image est bien dans containerd
+echo "Vérification de l'image dans containerd..."
+sudo ctr -n k8s.io images ls | grep "$TAG" || {
+    echo "❌ Image non trouvée dans containerd !"
+    exit 1
+}
+
+# 6. MODIFIER LE YAML TEMPORAIREMENT
+echo "6️⃣ Modification du deployment..."
 cp adb-with-gnirehtet.yaml adb-with-gnirehtet.yaml.backup
 sed -i "s|image: gnirehtet:arm64|image: $TAG|g" adb-with-gnirehtet.yaml
 
-# 6. DEPLOYER
-echo "6️⃣ Déploiement..."
+# 7. DEPLOYER
+echo "7️⃣ Déploiement..."
 kubectl apply -f adb-with-gnirehtet.yaml
 
 echo "⏳ Attente du pod..."
 kubectl wait --for=condition=ready pod -l app=adb -n stf --timeout=120s
 
-# 7. VERIFICATIONS
+# 8. VERIFICATIONS
 POD=$(kubectl get pod -n stf -l app=adb -o jsonpath='{.items[0].metadata.name}')
 echo ""
 echo "Pod: $POD"
