@@ -10,18 +10,23 @@ RUN apt-get update && \
     git \
     build-essential \
     pkg-config \
+    wget \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # Cloner Gnirehtet depuis GitHub
 WORKDIR /build
 RUN git clone --depth 1 --branch ${GNIREHTET_VERSION} https://github.com/Genymobile/gnirehtet.git
 
-# Compiler le binaire Rust
-WORKDIR /build/gnirehtet
-RUN cargo build --release --bin gnirehtet
+# Compiler le binaire Rust (le code est dans relay-rust/)
+WORKDIR /build/gnirehtet/relay-rust
+RUN cargo build --release
 
-# Copier l'APK (nécessaire pour Gnirehtet)
-RUN cp gnirehtet.apk /build/
+# Télécharger l'APK précompilé depuis les releases GitHub
+WORKDIR /build
+RUN wget https://github.com/Genymobile/gnirehtet/releases/download/${GNIREHTET_VERSION}/gnirehtet-rust-linux64-${GNIREHTET_VERSION}.zip && \
+    unzip gnirehtet-rust-linux64-${GNIREHTET_VERSION}.zip && \
+    mv gnirehtet-rust-linux64-${GNIREHTET_VERSION}/gnirehtet.apk /build/gnirehtet.apk
 
 # ============================================================
 # Image finale légère
@@ -35,12 +40,15 @@ RUN apt-get update && \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Copier le binaire compilé
-COPY --from=builder /build/gnirehtet/target/release/gnirehtet /usr/local/bin/gnirehtet
+# Copier le binaire compilé (depuis relay-rust/target/release/)
+COPY --from=builder /build/gnirehtet/relay-rust/target/release/gnirehtet /usr/local/bin/gnirehtet
 COPY --from=builder /build/gnirehtet.apk /data/gnirehtet.apk
 
 # Rendre le binaire exécutable
 RUN chmod +x /usr/local/bin/gnirehtet
+
+# Répertoire de travail (Gnirehtet cherche l'APK dans le même dossier)
+WORKDIR /data
 
 # Point d'entrée
 ENTRYPOINT ["/usr/local/bin/gnirehtet"]
