@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gnirehtet
+  namespace: stf
+  labels:
+    app: gnirehtet
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gnirehtet
+  template:
+    metadata:
+      labels:
+        app: gnirehtet
+    spec:
+      containers:
+        - name: gnirehtet
+          image: gnirehtet:arm64  # Image à builder (voir ci-dessous)
+          imagePullPolicy: Never
+          command: ["/gnirehtet", "run"]
+          volumeMounts:
+            - name: usb
+              mountPath: /dev/bus/usb
+          securityContext:
+            privileged: true
+          env:
+            # Utiliser l'ADB du service
+            - name: ADB_SERVER_SOCKET
+              value: "tcp:adb.stf.svc.cluster.local:5037"
+      volumes:
+        - name: usb
+          hostPath:
+            path: /dev/bus/usb
+            type: DirectoryOrCreate
+      nodeName: rpi5  # Même node que l'ADB
+      restartPolicy: Always

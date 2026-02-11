@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adb
+  namespace: stf
+  labels:
+    app: adb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: adb
+  template:
+    metadata:
+      labels:
+        app: adb
+    spec:
+      containers:
+        # Container ADB (existant)
+        - name: adb
+          image: adb:arm64
+          imagePullPolicy: Never
+          ports:
+            - name: adb
+              containerPort: 5037
+              protocol: TCP
+          volumeMounts:
+            - name: usb
+              mountPath: /dev/bus/usb
+          securityContext:
+            privileged: true
+
+        # Container Gnirehtet (nouveau - sidecar)
+        - name: gnirehtet
+          image: gnirehtet:arm64
+          imagePullPolicy: Never
+          command: ["/usr/local/bin/gnirehtet"]
+          args: ["run"]
+          volumeMounts:
+            - name: usb
+              mountPath: /dev/bus/usb
+          securityContext:
+            privileged: true
+          env:
+            # Gnirehtet utilisera ADB sur localhost (même pod)
+            - name: ADB_SERVER_SOCKET
+              value: "tcp:127.0.0.1:5037"
+
+      volumes:
+        - name: usb
+          hostPath:
+            path: /dev/bus/usb
+            type: DirectoryOrCreate
+      nodeName: rpi5
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: adb
+  namespace: stf
+  labels:
+    app: adb
+spec:
+  type: ClusterIP
+  selector:
+    app: adb
+  ports:
+    - name: adb
+      port: 5037
+      targetPort: 5037
+      protocol: TCP
