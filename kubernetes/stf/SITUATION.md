@@ -45,9 +45,20 @@
 | `setup.sh` | Installation complète depuis zéro |
 | `teardown.sh` | Suppression complète de tout |
 
-## Problème en cours : Gnirehtet — pas d'Internet sur le téléphone
+## Problème résolu : Gnirehtet — pas d'Internet sur le téléphone
 
-### Ce qui fonctionne
+### Cause racine
+
+Le `http_proxy` Android était configuré sur `proxy.stf.svc.cluster.local:3128` — un nom DNS interne Kubernetes **inaccessible depuis le téléphone**. Le téléphone ne peut pas résoudre les noms `.cluster.local` (son DNS passe par 8.8.8.8 via gnirehtet). Toutes les requêtes HTTP/HTTPS des apps étaient redirigées vers un proxy injoignable, provoquant des timeouts et des connexions qui se fermaient sans transfert de données.
+
+### Résolution
+
+```bash
+# Supprimer le proxy inaccessible
+adb shell "settings put global http_proxy :0"
+```
+
+### Ce qui fonctionne maintenant
 
 - **Image gnirehtet:arm64** : buildée correctement, contient `adb` (android-tools-adb)
 - **Import dans K3s containerd** : fonctionne via `sudo k3s ctr -n k8s.io images import`
@@ -55,38 +66,24 @@
 - **Clés ADB** : persistées via hostPath `/home/peuleu_server/.android`
 - **Gnirehtet relay** : démarre, installe l'APK sur le téléphone, tunnel VPN actif (tun0 UP)
 - **adb reverse** : configuré (`localabstract:gnirehtet tcp:31416`)
-- **VPN Android** : CONNECTED, VALIDATED par Android (connectivity check passé)
+- **VPN Android** : CONNECTED, VALIDATED par Android
+- **WiFi** : VALIDATED (après suppression du proxy)
+- **Internet via gnirehtet** : le relay relaie le trafic correctement
 
-### Ce qui ne fonctionne pas
+### Notes sur le proxy pour usage futur
 
-**Le téléphone n'a pas d'accès Internet malgré le tunnel gnirehtet actif.**
+Le téléphone **ne peut pas** utiliser un proxy avec un nom DNS Kubernetes interne (`*.svc.cluster.local`). Pour utiliser le proxy Squid depuis le téléphone via gnirehtet, il faut utiliser le **ClusterIP** directement :
 
-#### Diagnostic détaillé
+```bash
+# Récupérer le ClusterIP du proxy
+kubectl get svc proxy -n stf -o jsonpath='{.spec.clusterIP}'
+# Exemple : 10.43.6.129
 
-1. **Sans WiFi** : `Active default network: none`. Android refuse de promouvoir le VPN comme réseau par défaut sans réseau physique sous-jacent. Les apps disent "pas de réseau".
+# Configurer le proxy sur le téléphone (via ClusterIP)
+adb shell "settings put global http_proxy 10.43.6.129:3128"
+```
 
-2. **Avec WiFi (réseau local)** : `Active default network: 603 (WiFi)`. Le VPN capture le trafic (visible dans les logs du relay), mais les connexions TCP se ferment rapidement (~200ms-1.5s) sans que les données transitent réellement. Le relay du pod a accès à Internet (vérifié via `openssl s_client`), mais les connexions relayées échouent silencieusement.
-
-3. **Logs relay typiques** :
-   ```
-   TcpConnection: 10.0.0.2:57206 -> 172.217.18.206:443 Open
-   TcpConnection: 10.0.0.2:57206 -> 172.217.18.206:443 Close   # 147ms après
-   ```
-
-#### Causes possibles
-
-- Bug gnirehtet v2.5.1 sur ARM64 (relay compilé pour ARM64)
-- Problème de MTU sur le tun0 (MTU 16384, peut être trop grand)
-- Problème de buffer/throughput sur le relay via adb reverse
-- Incompatibilité Samsung (com.sec.android.app.launcher)
-
-### Pistes à explorer
-
-1. **Réduire le MTU** du VPN gnirehtet (modifier le code source ou config)
-2. **Tester gnirehtet directement sur le host** (hors Kubernetes) pour isoler si le problème vient de K8s
-3. **Utiliser une version plus récente de gnirehtet** ou un fork
-4. **Alternative RNDIS/USB tethering** : bridge réseau USB sans VPN Android
-5. **Alternative : proxy HTTP simple** sans reverse tethering (via WiFi local + proxy Squid)
+Cela fonctionne car le trafic du téléphone passe par gnirehtet → relay (dans le pod K8s) → réseau cluster → proxy Squid.
 
 ## Pièges découverts (à retenir)
 
@@ -126,7 +123,22 @@ args:
 
 Au premier lancement, Android affiche un dialogue "Autoriser la connexion VPN ?" qu'il faut accepter manuellement sur le téléphone. L'autorisation persiste ensuite.
 
-### 5. Android et le réseau par défaut
+### 5. Proxy HTTP Android et DNS Kubernetes
+
+Ne **jamais** configurer `http_proxy` Android avec un nom DNS K8s (`proxy.stf.svc.cluster.local`). Le téléphone résout les DNS via 8.8.8.8 (gnirehtet) ou le DNS local, qui ne connaissent pas `.cluster.local`. Utiliser le ClusterIP directement ou ne pas mettre de proxy.
+
+```bash
+# MAUVAIS — le téléphone ne peut pas résoudre ce DNS
+adb shell "settings put global http_proxy proxy.stf.svc.cluster.local:3128"
+
+# BON — utiliser le ClusterIP
+adb shell "settings put global http_proxy 10.43.6.129:3128"
+
+# RESET — supprimer le proxy
+adb shell "settings put global http_proxy :0"
+```
+
+### 6. Android et le réseau par défaut
 
 Android ne met pas un VPN comme réseau par défaut s'il n'y a aucun réseau physique actif (WiFi ou mobile data). Il faut au moins un réseau physique connecté.
 
