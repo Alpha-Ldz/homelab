@@ -4,6 +4,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+
 echo "=== Setup STF complet ==="
 
 # 1. Namespace
