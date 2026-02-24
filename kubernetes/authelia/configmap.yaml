@@ -41,7 +41,7 @@ data:
           policy: bypass
         - domain: home.freedom35.fr
           policy: one_factor
-        - domain: klipper.freedom35.fr
+        - domain: mainsail.freedom35.fr
           policy: one_factor
         - domain: stf.freedom35.fr
           policy: two_factor

@@ -57,7 +57,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: klipper.freedom35.fr
+    - host: mainsail.freedom35.fr
       http:
         paths:
           - path: /

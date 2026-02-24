@@ -89,13 +89,23 @@ data:
             - secured
           priority: 1
 
-        klipper:
-          rule: "Host(`klipper.freedom35.fr`)"
+        moonraker:
+          rule: "Host(`mainsail.freedom35.fr`) && (PathPrefix(`/websocket`) || PathPrefix(`/api/`) || PathPrefix(`/printer/`) || PathPrefix(`/server/`) || PathPrefix(`/machine/`) || PathPrefix(`/access/`))"
+          service: moonraker
+          entryPoints:
+            - web
+          middlewares:
+            - https-headers
+          priority: 100
+
+        mainsail:
+          rule: "Host(`mainsail.freedom35.fr`)"
           service: klipper
           entryPoints:
             - web
           middlewares:
             - secured
+          priority: 1
 
         homarr:
           rule: "Host(`home.freedom35.fr`)"
@@ -104,6 +114,22 @@ data:
             - web
           middlewares:
             - secured
+
+        stalwart:
+          rule: "Host(`stalwart.freedom35.fr`)"
+          service: stalwart
+          entryPoints:
+            - web
+          middlewares:
+            - https-headers
+
+        webmail:
+          rule: "Host(`webmail.freedom35.fr`)"
+          service: snappymail
+          entryPoints:
+            - web
+          middlewares:
+            - https-headers
 
       services:
         authelia:
@@ -121,7 +147,22 @@ data:
             servers:
               - url: "http://mainsail.klipper.svc.cluster.local:80"
 
+        moonraker:
+          loadBalancer:
+            servers:
+              - url: "http://klipper.klipper.svc.cluster.local:7125"
+
         homarr:
           loadBalancer:
             servers:
               - url: "http://homarr.homarr.svc.cluster.local:7575"
+
+        stalwart:
+          loadBalancer:
+            servers:
+              - url: "http://stalwart.stalwart.svc.cluster.local:8080"
+
+        snappymail:
+          loadBalancer:
+            servers:
+              - url: "http://snappymail.snappymail.svc.cluster.local:8888"
