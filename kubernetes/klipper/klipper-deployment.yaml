@@ -38,7 +38,6 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 7125
-              hostPort: 7125
               protocol: TCP
           securityContext:
             capabilities:
@@ -52,10 +51,8 @@ spec:
               name: klipper-claim
             - mountPath: /home/klippy/.moonraker_database
               name: moonraker-claim
-            - name: usb-device
-              mountPath: /dev/klipper-main
-            - name: usb-input-shaper
-              mountPath: /dev/klipper-shaper
+            - name: dev
+              mountPath: /dev
       nodeName: rpi5
       restartPolicy: Always
       volumes:
@@ -68,12 +65,9 @@ spec:
         - name: gcode-claim
           persistentVolumeClaim:
             claimName: gcode-claim
-        - name: usb-device
+        - name: dev
           hostPath:
-            path: /dev/klipper-main
-        - name: usb-input-shaper
-          hostPath:
-            path: /dev/klipper-shaper
+            path: /dev
 ---
 apiVersion: v1
 kind: Service

@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: snappymail-data
+  namespace: snappymail
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snappymail
+  namespace: snappymail
+  labels:
+    app: snappymail
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: snappymail
+  template:
+    metadata:
+      labels:
+        app: snappymail
+    spec:
+      containers:
+        - name: snappymail
+          image: djmaze/snappymail:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8888
+              protocol: TCP
+          env:
+            - name: TZ
+              value: "Europe/Paris"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/snappymail
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8888
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8888
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: snappymail-data
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: snappymail
+  namespace: snappymail
+  labels:
+    app: snappymail
+spec:
+  type: ClusterIP
+  selector:
+    app: snappymail
+  ports:
+    - name: http
+      port: 8888
+      targetPort: 8888
+      protocol: TCP
