@@ -45,6 +45,10 @@ data:
           policy: one_factor
         - domain: stf.freedom35.fr
           policy: two_factor
+        - domain: ai.freedom35.fr
+          policy: one_factor
+        - domain: ollama.freedom35.fr
+          policy: one_factor
 
     session:
       name: authelia_session

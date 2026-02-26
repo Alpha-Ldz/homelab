@@ -115,6 +115,22 @@ data:
           middlewares:
             - secured
 
+        ollama:
+          rule: "Host(`ollama.freedom35.fr`)"
+          service: ollama
+          entryPoints:
+            - web
+          middlewares:
+            - secured
+
+        open-webui:
+          rule: "Host(`ai.freedom35.fr`)"
+          service: open-webui
+          entryPoints:
+            - web
+          middlewares:
+            - secured
+
         stalwart:
           rule: "Host(`stalwart.freedom35.fr`)"
           service: stalwart
@@ -166,3 +182,13 @@ data:
           loadBalancer:
             servers:
               - url: "http://snappymail.snappymail.svc.cluster.local:8888"
+
+        ollama:
+          loadBalancer:
+            servers:
+              - url: "http://ollama.ollama.svc.cluster.local:11434"
+
+        open-webui:
+          loadBalancer:
+            servers:
+              - url: "http://open-webui.ollama.svc.cluster.local:8080"
