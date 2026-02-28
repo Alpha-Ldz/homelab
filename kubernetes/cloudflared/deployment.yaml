@@ -22,6 +22,8 @@ spec:
           args:
             - tunnel
             - --no-autoupdate
+            - --protocol
+            - http2
             - --metrics
             - 0.0.0.0:2000
             - run
@@ -57,4 +59,6 @@ spec:
             limits:
               memory: "128Mi"
               cpu: "500m"
+      nodeSelector:
+        kubernetes.io/hostname: rpi5
       restartPolicy: Always

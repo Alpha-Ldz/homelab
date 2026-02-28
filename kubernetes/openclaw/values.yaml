@@ -1,0 +1,171 @@
+app-template:
+  configMaps:
+    config:
+      data:
+        openclaw.json: |
+          {
+            "gateway": {
+              "port": 18789,
+              "mode": "local",
+              "controlUi": {
+                "allowedOrigins": ["https://openclaw.freedom35.fr", "http://localhost:18789"]
+              },
+              "auth": {
+                "mode": "token",
+                "token": "cc796d7605b33c7c0cb7e80fba17bbebe9d68ea7171b4bdf"
+              }
+            },
+            "models": {
+              "providers": {
+                "ollama": {
+                  "baseUrl": "http://ollama.ollama.svc.cluster.local:11434/v1",
+                  "apiKey": "ollama-local",
+                  "api": "openai-completions",
+                  "auth": "api-key",
+                  "models": [
+                    {"id": "qwen3:32b", "name": "Qwen 3 (32B)"},
+                    {"id": "qwen2.5:32b", "name": "Qwen 2.5 (32B)"},
+                    {"id": "qwen2.5:14b", "name": "Qwen 2.5 (14B)"}
+                  ]
+                }
+              }
+            },
+            "agents": {
+              "defaults": {
+                "model": "ollama/qwen3:32b"
+              }
+            },
+            "browser": {
+              "enabled": true,
+              "attachOnly": true,
+              "defaultProfile": "remote-vnc",
+              "profiles": {
+                "remote-vnc": {
+                  "cdpUrl": "http://openclaw-chrome-vnc.openclaw.svc.cluster.local:9222",
+                  "color": "#FF4500"
+                }
+              }
+            },
+            "tools": {
+              "profile": "coding",
+              "allow": ["*"]
+            },
+            "channels": {
+              "telegram": {
+                "enabled": true,
+                "botToken": "${TELEGRAM_BOT_TOKEN}",
+                "dmPolicy": "open",
+                "allowFrom": ["*"],
+                "streaming": "partial"
+              }
+            }
+          }
+      enabled: true
+  configMode: merge
+  controllers:
+    main:
+      containers:
+        chromium:
+          enabled: false
+        main:
+          env:
+            TELEGRAM_BOT_TOKEN:
+              valueFrom:
+                secretKeyRef:
+                  key: token
+                  name: telegram-bot-token
+            NOTION_API_KEY:
+              valueFrom:
+                secretKeyRef:
+                  key: key
+                  name: notion-api-key
+            PATH: "/home/node/.openclaw/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  ingress:
+    main:
+      annotations:
+        cert-manager.io/cluster-issuer: cloudflare-issuer
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.tls: "true"
+      className: traefik
+      enabled: true
+      hosts:
+      - host: openclaw.freedom35.fr
+        paths:
+        - path: /
+          pathType: Prefix
+          service:
+            identifier: main
+            port: http
+      tls:
+      - hosts:
+        - openclaw.freedom35.fr
+        secretName: openclaw-tls
+  nodeSelector:
+    kubernetes.io/hostname: sleeper
+  openclawVersion: 2026.2.25
+  persistence:
+    bash-aliases:
+      advancedMounts:
+        main:
+          main:
+          - path: /home/node/.bash_aliases
+            readOnly: true
+            subPath: bash_aliases
+      enabled: true
+      identifier: config
+      type: configMap
+    config:
+      advancedMounts:
+        main:
+          init-config:
+          - path: /config
+            readOnly: true
+      enabled: true
+      identifier: config
+      type: configMap
+    data:
+      accessMode: ReadWriteOnce
+      advancedMounts:
+        main:
+          init-config:
+          - path: /home/node/.openclaw
+          init-skills:
+          - path: /home/node/.openclaw
+          main:
+          - path: /home/node/.openclaw
+      enabled: true
+      size: 10Gi
+      storageClass: longhorn
+      type: persistentVolumeClaim
+    tmp:
+      advancedMounts:
+        main:
+          init-config:
+          - path: /tmp
+          init-skills:
+          - path: /tmp
+          main:
+          - path: /tmp
+      enabled: true
+      type: emptyDir
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  service:
+    main:
+      controller: main
+      ipFamilies:
+      - IPv4
+      ipFamilyPolicy: SingleStack
+      ports:
+        http:
+          port: 18789
+      type: ClusterIP
+  tolerations:
+  - effect: NoSchedule
+    key: dedicated
+    value: llm
