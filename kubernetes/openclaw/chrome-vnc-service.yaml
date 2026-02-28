@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: openclaw-chrome-vnc
+  namespace: openclaw
+  labels:
+    app: openclaw-chrome-vnc
+spec:
+  type: ClusterIP
+  selector:
+    app: openclaw-chrome-vnc
+  ports:
+    - name: novnc
+      port: 6901
+      targetPort: 6901
+    - name: vnc
+      port: 5901
+      targetPort: 5901
+    - name: cdp
+      port: 9222
+      targetPort: 9222
