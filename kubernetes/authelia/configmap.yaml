@@ -51,6 +51,8 @@ data:
           policy: one_factor
         - domain: vnc.freedom35.fr
           policy: two_factor
+        - domain: openclaw.freedom35.fr
+          policy: one_factor
 
     session:
       name: authelia_session
