@@ -155,6 +155,14 @@ data:
           middlewares:
             - secured
 
+        openclaw:
+          rule: "Host(`openclaw.freedom35.fr`)"
+          service: openclaw
+          entryPoints:
+            - web
+          middlewares:
+            - secured
+
       services:
         authelia:
           loadBalancer:
@@ -200,6 +208,11 @@ data:
           loadBalancer:
             servers:
               - url: "http://open-webui.ollama.svc.cluster.local:8080"
+
+        openclaw:
+          loadBalancer:
+            servers:
+              - url: "http://openclaw.openclaw.svc.cluster.local:18789"
 
         openclaw-vnc:
           loadBalancer:

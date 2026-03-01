@@ -23,6 +23,7 @@ app-template:
                   "api": "openai-completions",
                   "auth": "api-key",
                   "models": [
+                    {"id": "qwen3.5:35b", "name": "Qwen 3.5 (35B)"},
                     {"id": "qwen3:32b", "name": "Qwen 3 (32B)"},
                     {"id": "qwen2.5:32b", "name": "Qwen 2.5 (32B)"},
                     {"id": "qwen2.5:14b", "name": "Qwen 2.5 (14B)"}
@@ -32,7 +33,7 @@ app-template:
             },
             "agents": {
               "defaults": {
-                "model": "ollama/qwen3:32b"
+                "model": "ollama/qwen3.5:35b"
               }
             },
             "browser": {
