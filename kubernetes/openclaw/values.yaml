@@ -23,10 +23,10 @@ app-template:
                   "api": "openai-completions",
                   "auth": "api-key",
                   "models": [
-                    {"id": "qwen3.5:35b", "name": "Qwen 3.5 (35B)"},
-                    {"id": "qwen3:32b", "name": "Qwen 3 (32B)"},
-                    {"id": "qwen2.5:32b", "name": "Qwen 2.5 (32B)"},
-                    {"id": "qwen2.5:14b", "name": "Qwen 2.5 (14B)"}
+                    {"id": "qwen3.5:35b", "name": "qwen3.5:35b"},
+                    {"id": "qwen2.5-coder:7b-instruct-q8_0", "name": "qwen2.5-coder:7b-instruct-q8_0"},
+                    {"id": "llama3.1:8b-instruct-q8_0", "name": "llama3.1:8b-instruct-q8_0"},
+                    {"id": "mixtral:8x7b-instruct-v0.1-q4_K_M", "name": "mixtral:8x7b-instruct-v0.1-q4_K_M"}
                   ]
                 }
               }
@@ -49,7 +49,10 @@ app-template:
             },
             "tools": {
               "profile": "coding",
-              "allow": ["*"]
+              "allow": ["*"],
+              "exec": {
+                "host": "sandbox"
+              }
             },
             "channels": {
               "telegram": {
@@ -58,6 +61,24 @@ app-template:
                 "dmPolicy": "open",
                 "allowFrom": ["*"],
                 "streaming": "partial"
+              }
+            },
+            "skills": {
+              "entries": {
+                "notion-api": {
+                  "enabled": true,
+                  "env": {
+                    "NOTION_KEY": "${NOTION_API_KEY}"
+                  }
+                },
+                "bitwarden-vault": {
+                  "enabled": true,
+                  "env": {
+                    "BITWARDENCLI_APPDATA_DIR": "/home/node/.openclaw/data/bitwarden",
+                    "BW_CLIENTID": "${BW_CLIENTID}",
+                    "BW_CLIENTSECRET": "${BW_CLIENTSECRET}"
+                  }
+                }
               }
             }
           }
@@ -80,6 +101,22 @@ app-template:
                 secretKeyRef:
                   key: key
                   name: notion-api-key
+            NOTION_KEY:
+              valueFrom:
+                secretKeyRef:
+                  key: key
+                  name: notion-api-key
+            BITWARDENCLI_APPDATA_DIR: "/home/node/.openclaw/data/bitwarden"
+            BW_CLIENTID:
+              valueFrom:
+                secretKeyRef:
+                  key: clientid
+                  name: bitwarden-api-key
+            BW_CLIENTSECRET:
+              valueFrom:
+                secretKeyRef:
+                  key: clientsecret
+                  name: bitwarden-api-key
             PATH: "/home/node/.openclaw/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
   ingress:
     main:

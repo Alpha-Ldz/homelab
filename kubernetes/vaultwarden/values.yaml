@@ -1,0 +1,47 @@
+vaultwarden:
+  domain: "https://vaultwarden.freedom35.fr"
+  allowSignups: false  # Inscriptions désactivées
+  allowInvitation: true
+  enableWebVault: true
+
+  # Configuration SMTP pour les emails (notifications, vérification, etc.)
+  # À configurer plus tard si besoin
+  smtp:
+    enabled: false
+    # host: "stalwart.stalwart.svc.cluster.local"
+    # from: "vaultwarden@freedom35.fr"
+    # port: 25
+    # security: "off"
+
+  admin:
+    enabled: true
+    disableAdminToken: false
+
+# Persistence pour les données
+persistence:
+  enabled: true
+  storageClass: "longhorn"
+  accessMode: ReadWriteOnce
+  size: 5Gi
+
+# Ingress pour l'accès HTTPS
+ingress:
+  enabled: true
+  className: traefik
+  host: vaultwarden.freedom35.fr
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+  tls: []
+
+# Resources
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Strategy de déploiement
+strategy:
+  type: Recreate  # Important pour éviter les conflits de volume
