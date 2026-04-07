@@ -2,6 +2,15 @@ app-template:
   configMaps:
     config:
       data:
+        exec-approvals.json: |
+          {
+            "version": 1,
+            "defaults": {
+              "security": "allowlist",
+              "ask": "off",
+              "autoAllowSkills": true
+            }
+          }
         openclaw.json: |
           {
             "gateway": {
@@ -18,22 +27,34 @@ app-template:
             "models": {
               "providers": {
                 "ollama": {
-                  "baseUrl": "http://ollama.ollama.svc.cluster.local:11434/v1",
+                  "baseUrl": "http://ollama.ollama.svc.cluster.local:11434",
                   "apiKey": "ollama-local",
-                  "api": "openai-completions",
                   "auth": "api-key",
+                  "api": "ollama",
                   "models": [
-                    {"id": "qwen3.5:35b", "name": "qwen3.5:35b"},
-                    {"id": "qwen2.5-coder:7b-instruct-q8_0", "name": "qwen2.5-coder:7b-instruct-q8_0"},
-                    {"id": "llama3.1:8b-instruct-q8_0", "name": "llama3.1:8b-instruct-q8_0"},
-                    {"id": "mixtral:8x7b-instruct-v0.1-q4_K_M", "name": "mixtral:8x7b-instruct-v0.1-q4_K_M"}
+                    {"id": "qwen3:32b-q4_K_M", "name": "Qwen 3 32B (Q4_K_M) - Best for complex tasks"},
+                    {"id": "qwen2.5:14b-instruct-q8_0", "name": "Qwen 2.5 14B (Q8) - Best for agents"},
+                    {"id": "deepseek-r1:14b-qwen-distill-q8_0", "name": "DeepSeek R1 14B (Q8) - Best reasoning (no tools)"},
+                    {"id": "qwen3:14b-q8_0", "name": "Qwen 3 14B (Q8) - Higher quality"},
+                    {"id": "qwen2.5-coder:7b-instruct-q8_0", "name": "Qwen 2.5 Coder 7B - Fast coding"},
+                    {"id": "llama3.1:8b-instruct-q8_0", "name": "Llama 3.1 8B - General purpose"}
+                  ]
+                },
+                "anthropic": {
+                  "baseUrl": "https://api.anthropic.com",
+                  "apiKey": "${ANTHROPIC_API_KEY}",
+                  "models": [
+                    {"id": "claude-sonnet-4-5", "name": "Claude Sonnet 4.5"},
+                    {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6"},
+                    {"id": "claude-haiku-4-5", "name": "Claude Haiku 4.5"},
+                    {"id": "claude-opus-4-6", "name": "Claude Opus 4.6"}
                   ]
                 }
               }
             },
             "agents": {
               "defaults": {
-                "model": "ollama/qwen3.5:35b"
+                "model": "anthropic/claude-sonnet-4-5"
               }
             },
             "browser": {
@@ -51,7 +72,7 @@ app-template:
               "profile": "coding",
               "allow": ["*"],
               "exec": {
-                "host": "sandbox"
+                "host": "gateway"
               }
             },
             "channels": {
@@ -117,6 +138,11 @@ app-template:
                 secretKeyRef:
                   key: clientsecret
                   name: bitwarden-api-key
+            ANTHROPIC_API_KEY:
+              valueFrom:
+                secretKeyRef:
+                  key: api-key
+                  name: anthropic-api-key
             PATH: "/home/node/.openclaw/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
   ingress:
     main:

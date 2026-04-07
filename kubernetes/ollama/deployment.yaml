@@ -52,6 +52,9 @@ spec:
           operator: Equal
           value: llm
           effect: NoSchedule
+        - key: node.kubernetes.io/disk-pressure
+          operator: Exists
+          effect: NoSchedule
       containers:
         - name: ollama
           image: ollama/ollama:latest
@@ -59,7 +62,8 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              echo /run/opengl-driver/lib > /etc/ld.so.conf.d/nvidia.conf
+              echo /nix/store/80yhxjr5lpr1kgc550qwx2aynjy9ircg-nvidia-x11-580.119.02-6.12.62/lib > /etc/ld.so.conf.d/nvidia.conf
+              echo /run/opengl-driver/lib >> /etc/ld.so.conf.d/nvidia.conf
               ldconfig
               exec /bin/ollama serve
           ports:
@@ -70,18 +74,28 @@ spec:
               value: "0.0.0.0:11434"
             - name: OLLAMA_KEEP_ALIVE
               value: "-1"
+            - name: OLLAMA_DEBUG
+              value: "2"
             - name: LD_LIBRARY_PATH
-              value: "/run/opengl-driver/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64"
-            - name: CUDA_VISIBLE_DEVICES
-              value: "GPU-d67d319a-29d7-7aa6-c57f-66ffb7ec5c2a"
-            - name: OLLAMA_LLM_LIBRARY
-              value: "cuda_v13"
-            - name: LD_PRELOAD
-              value: "/run/opengl-driver/lib/libnvidia-ml.so.1"
+              value: "/nix/store/80yhxjr5lpr1kgc550qwx2aynjy9ircg-nvidia-x11-580.119.02-6.12.62/lib:/run/opengl-driver/lib:/usr/lib/ollama:/usr/lib/ollama/cuda_v12"
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: "0"
+            - name: NVIDIA_DRIVER_CAPABILITIES
+              value: "compute,utility"
+            - name: CUDA_DEVICE_ORDER
+              value: "PCI_BUS_ID"
+            # - name: CUDA_VISIBLE_DEVICES
+            #   value: "GPU-845851fc-ba8a-f233-707c-6c4f5d9648ba"
+            # - name: OLLAMA_LLM_LIBRARY
+            #   value: "cuda_v12"
+            # - name: LD_PRELOAD
+            #   value: "/run/opengl-driver/lib/libnvidia-ml.so.1"
           securityContext:
             privileged: true
           resources:
             limits:
+              nvidia.com/gpu: "1"
+            requests:
               nvidia.com/gpu: "1"
           volumeMounts:
             - name: models
@@ -156,6 +170,9 @@ spec:
         - key: dedicated
           operator: Equal
           value: llm
+          effect: NoSchedule
+        - key: node.kubernetes.io/disk-pressure
+          operator: Exists
           effect: NoSchedule
       containers:
         - name: open-webui

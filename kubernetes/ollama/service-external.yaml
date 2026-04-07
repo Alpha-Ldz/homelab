@@ -1,0 +1,28 @@
+---
+# Service qui pointe vers Ollama natif sur sleeper
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: ollama
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 11434
+      targetPort: 11434
+      protocol: TCP
+---
+# Endpoint manuel pointant vers sleeper
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: ollama
+  namespace: ollama
+subsets:
+  - addresses:
+      - ip: 192.168.1.158  # IP de sleeper
+    ports:
+      - name: http
+        port: 11434
+        protocol: TCP

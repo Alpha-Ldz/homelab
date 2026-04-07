@@ -1,0 +1,59 @@
+version: '3.8'
+
+# Klipper + Moonraker + Mainsail pour Ender-5 S1
+# Basé sur le projet prind (https://github.com/mkuf/prind)
+
+x-common: &common
+  restart: unless-stopped
+
+services:
+  klipper:
+    <<: *common
+    image: mkuf/klipper:latest
+    container_name: klipper
+    privileged: true
+    user: root
+    group_add:
+      - dialout
+    cap_add:
+      - SYS_NICE
+    volumes:
+      - ./run:/opt/printer_data/run
+      - ./config:/opt/printer_data/config
+      - ./gcodes:/opt/printer_data/gcodes
+      - ./logs:/opt/printer_data/logs
+      - /dev:/dev
+    command: -I printer_data/run/klipper.tty -a printer_data/run/klipper.sock printer_data/config/printer.cfg
+
+  moonraker:
+    <<: *common
+    image: mkuf/moonraker:latest
+    container_name: moonraker
+    user: root
+    depends_on:
+      klipper:
+        condition: service_started
+    volumes:
+      - ./run:/opt/printer_data/run
+      - ./config:/opt/printer_data/config
+      - ./gcodes:/opt/printer_data/gcodes
+      - ./logs:/opt/printer_data/logs
+      - ./moonraker-db:/opt/printer_data/database
+    ports:
+      - "7125:7125"
+
+  mainsail:
+    <<: *common
+    image: ghcr.io/mainsail-crew/mainsail:latest
+    container_name: mainsail
+    depends_on:
+      moonraker:
+        condition: service_started
+    ports:
+      - "8080:80"
+    volumes:
+      - ./mainsail-config.json:/usr/share/nginx/html/config.json:ro
+
+networks:
+  default:
+    name: klipper-network
