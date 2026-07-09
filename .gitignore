@@ -12,6 +12,10 @@
 kubernetes/authelia/secrets.yaml
 kubernetes/cloudflared/secret.yaml
 kubernetes/postgres/secrets.yaml
+kubernetes/openclaw/values.yaml
+
+# Credentials documentation (contains real tokens)
+scripts/credentials.md
 
 # Klipper runtime data
 klipper/logs/

@@ -17,11 +17,11 @@ app-template:
               "port": 18789,
               "mode": "local",
               "controlUi": {
-                "allowedOrigins": ["https://openclaw.freedom35.fr", "http://localhost:18789"]
+                "allowedOrigins": ["https://openclaw.example.com", "http://localhost:18789"]
               },
               "auth": {
                 "mode": "token",
-                "token": "REDACTED_OPENCLAW_TOKEN"
+                "token": "CHANGE_ME_GENERATE_WITH_openssl_rand_hex_32"
               }
             },
             "models": {
@@ -153,7 +153,7 @@ app-template:
       className: traefik
       enabled: true
       hosts:
-      - host: openclaw.freedom35.fr
+      - host: openclaw.example.com
         paths:
         - path: /
           pathType: Prefix
@@ -162,7 +162,7 @@ app-template:
             port: http
       tls:
       - hosts:
-        - openclaw.freedom35.fr
+        - openclaw.example.com
         secretName: openclaw-tls
   nodeSelector:
     kubernetes.io/hostname: sleeper
