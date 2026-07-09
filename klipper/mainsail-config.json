@@ -1,9 +1,0 @@
-{
-  "instancesDB": "json",
-  "instances": [
-    {
-      "hostname": "localhost",
-      "port": 7125
-    }
-  ]
-}
