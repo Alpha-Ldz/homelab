@@ -1,0 +1,45 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Claude Code local settings
+.claude/
+
+# Kubernetes secrets (use .example files as templates)
+kubernetes/authelia/secrets.yaml
+kubernetes/cloudflared/secret.yaml
+kubernetes/postgres/secrets.yaml
+
+# Klipper runtime data
+klipper/logs/
+klipper/gcodes/
+klipper/moonraker-db/
+klipper/run/
+klipper/config/.*.bkp
+klipper/mainsail-config.json
+
+# Environment files (keep .example files)
+.env
+.env.*
+!.env.example
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+*.log.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
