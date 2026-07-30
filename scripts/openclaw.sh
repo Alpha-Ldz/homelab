@@ -8,7 +8,7 @@
 GATEWAY_URL="https://openclaw.freedom35.fr"
 
 # Gateway Token
-GATEWAY_TOKEN="REDACTED_OPENCLAW_TOKEN"
+GATEWAY_TOKEN="CHANGE_ME_GENERATE_WITH_openssl_rand_hex_32"
 
 echo "OpenClaw Gateway Token: $GATEWAY_TOKEN"
 echo "Gateway URL: $GATEWAY_URL"
