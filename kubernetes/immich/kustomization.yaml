@@ -13,3 +13,4 @@ resources:
   - machine-learning.yaml
   - server.yaml
   - ingress.yaml
+  - db-dump.yaml

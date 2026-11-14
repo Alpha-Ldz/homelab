@@ -1,0 +1,136 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backrest-state
+spec:
+  storageClassName: local-path
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backrest
+  labels:
+    app: backrest
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: backrest
+  template:
+    metadata:
+      labels:
+        app: backrest
+    spec:
+      # Nom d'hôte fixe : restic s'en sert pour retrouver le snapshot parent
+      hostname: rpi5-backrest
+      # Lit les dossiers de l'hôte : doit tourner sur le Pi
+      nodeSelector:
+        kubernetes.io/hostname: raspberrypi
+      initContainers:
+        - name: seed-config
+          image: busybox:1.37.0
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /state/config /state/data /state/cache
+              if [ ! -e /state/config/config.json ]; then
+                sed "s|\${RESTIC_PASSWORD}|$RESTIC_PASSWORD|" /seed/config.json.tmpl > /state/config/config.json
+                chmod 600 /state/config/config.json
+                echo "config.json initialisé"
+              fi
+          env:
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: backrest-secrets
+                  key: RESTIC_PASSWORD
+          volumeMounts:
+            - name: state
+              mountPath: /state
+            - name: seed
+              mountPath: /seed
+      containers:
+        - name: backrest
+          image: garethgeorge/backrest:v1.14.1
+          env:
+            - name: TZ
+              value: Europe/Paris
+            - name: BACKREST_PORT
+              value: 0.0.0.0:9898
+            - name: BACKREST_DATA
+              value: /data
+            - name: BACKREST_CONFIG
+              value: /config/config.json
+            - name: XDG_CACHE_HOME
+              value: /cache
+          ports:
+            - name: http
+              containerPort: 9898
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 2Gi
+          volumeMounts:
+            - name: state
+              mountPath: /config
+              subPath: config
+            - name: state
+              mountPath: /data
+              subPath: data
+            - name: state
+              mountPath: /cache
+              subPath: cache
+            # Sources (lecture seule)
+            - name: files
+              mountPath: /sources/files
+              readOnly: true
+            - name: k3s-volumes
+              mountPath: /sources/k3s-volumes
+              readOnly: true
+            # Dépôt restic (aujourd'hui sur le NVMe ; plus tard sur les disques de données)
+            - name: repo
+              mountPath: /repos/local
+      volumes:
+        - name: state
+          persistentVolumeClaim:
+            claimName: backrest-state
+        - name: seed
+          configMap:
+            name: backrest-config-seed
+        - name: files
+          hostPath:
+            path: /srv/files
+            type: Directory
+        - name: k3s-volumes
+          hostPath:
+            path: /var/lib/rancher/k3s/storage
+            type: Directory
+        - name: repo
+          hostPath:
+            path: /srv/files/backups/restic
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backrest
+spec:
+  selector:
+    app: backrest
+  ports:
+    - name: http
+      port: 9898
+      targetPort: http

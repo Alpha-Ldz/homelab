@@ -18,7 +18,7 @@ fi
 
 # --- Réglages généraux
 occ background:cron
-occ config:system:set overwritehost --value=cloud.freedom35.fr
+occ config:system:set overwritehost --value=nextcloud.freedom35.fr
 occ config:system:set default_phone_region --value=FR
 occ config:system:set maintenance_window_start --type=integer --value=1
 # Cloudflare (offre gratuite) refuse les requêtes > 100 Mo : envois découpés en morceaux de 90 Mo

@@ -1,0 +1,46 @@
+# Dump SQL quotidien (02:30), sauvegardé ensuite par Backrest (03:00).
+# Restauration : pg_restore --clean --if-exists -d nextcloud <fichier.dump>
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-dump
+spec:
+  schedule: "30 2 * * *"
+  timeZone: Europe/Paris
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          nodeSelector:
+            kubernetes.io/hostname: raspberrypi
+          containers:
+            - name: pg-dump
+              image: postgres:17.12-alpine
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  f=/dumps/nextcloud-$(date +%Y%m%d-%H%M).dump
+                  pg_dump -h postgres -U nextcloud -Fc nextcloud > "$f.tmp" && mv "$f.tmp" "$f"
+                  ls -1t /dumps/nextcloud-*.dump | tail -n +4 | xargs -r rm -f
+                  ls -lh /dumps
+              env:
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: nextcloud-secrets
+                      key: POSTGRES_PASSWORD
+              volumeMounts:
+                - name: dumps
+                  mountPath: /dumps
+          volumes:
+            - name: dumps
+              hostPath:
+                path: /srv/files/dumps/nextcloud
+                type: DirectoryOrCreate

@@ -1,0 +1,23 @@
+# Backrest (restic) — sauvegardes nocturnes versionnées du homelab
+# Prérequis (hors git) : Secret backrest-secrets (voir secret.yaml.example)
+# Déploiement : kubectl apply -k kubernetes/backup
+#
+# Ce qui est sauvegardé (03:00, 7 jours / 4 semaines / 6 mois) :
+#   /srv/files                       Nextcloud, photos Immich, gcodes, dumps SQL
+#   /var/lib/rancher/k3s/storage     volumes K8s (Authelia, Homarr, Klipper, Portainer…)
+# Exclu : vignettes/transcodages Immich et cache ML (régénérables), fichiers bruts
+#   PostgreSQL (remplacés par les dumps de 02:30 : kubernetes/{nextcloud,immich}/db-dump.yaml)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: backup
+
+resources:
+  - namespace.yaml
+  - backrest.yaml
+  - ingress.yaml
+
+# Config initiale : copiée au premier démarrage seulement (Backrest la modifie ensuite).
+configMapGenerator:
+  - name: backrest-config-seed
+    files:
+      - config.json.tmpl

@@ -1,0 +1,43 @@
+{
+  "modno": 1,
+  "version": 6,
+  "instance": "rpi5",
+  "auth": { "disabled": true },
+  "repos": [
+    {
+      "id": "local",
+      "uri": "/repos/local",
+      "password": "${RESTIC_PASSWORD}",
+      "autoInitialize": true,
+      "autoUnlock": true,
+      "prunePolicy": {
+        "schedule": { "cron": "0 4 * * 0", "clock": "CLOCK_LOCAL" },
+        "maxUnusedPercent": 10
+      },
+      "checkPolicy": {
+        "schedule": { "cron": "0 5 1 * *", "clock": "CLOCK_LOCAL" },
+        "readDataSubsetPercent": 5
+      }
+    }
+  ],
+  "plans": [
+    {
+      "id": "homelab-nightly",
+      "repo": "local",
+      "paths": ["/sources/files", "/sources/k3s-volumes"],
+      "excludes": [
+        "/sources/files/backups",
+        "/sources/files/photos/thumbs",
+        "/sources/files/photos/encoded-video",
+        "/sources/k3s-volumes/*_immich_model-cache",
+        "/sources/k3s-volumes/*_immich_database-data",
+        "/sources/k3s-volumes/*_nextcloud_postgres-data",
+        "/sources/k3s-volumes/*_backup_backrest-state"
+      ],
+      "schedule": { "cron": "0 3 * * *", "clock": "CLOCK_LOCAL" },
+      "retention": {
+        "policyTimeBucketed": { "daily": 7, "weekly": 4, "monthly": 6 }
+      }
+    }
+  ]
+}

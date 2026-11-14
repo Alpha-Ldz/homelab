@@ -1,0 +1,46 @@
+# Dump SQL quotidien (02:30, méthode recommandée par Immich), sauvegardé par Backrest (03:00).
+# Restauration : cf. https://immich.app/docs/administration/backup-and-restore
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-dump
+spec:
+  schedule: "30 2 * * *"
+  timeZone: Europe/Paris
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          nodeSelector:
+            kubernetes.io/hostname: raspberrypi
+          containers:
+            - name: pg-dumpall
+              image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  f=/dumps/immich-$(date +%Y%m%d-%H%M).sql.gz
+                  pg_dumpall -h database -U immich --clean --if-exists | gzip > "$f.tmp" && mv "$f.tmp" "$f"
+                  ls -1t /dumps/immich-*.sql.gz | tail -n +4 | xargs -r rm -f
+                  ls -lh /dumps
+              env:
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: immich-secrets
+                      key: DB_PASSWORD
+              volumeMounts:
+                - name: dumps
+                  mountPath: /dumps
+          volumes:
+            - name: dumps
+              hostPath:
+                path: /srv/files/dumps/immich
+                type: DirectoryOrCreate

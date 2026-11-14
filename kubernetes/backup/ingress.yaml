@@ -1,0 +1,20 @@
+# Interface Backrest : authentification interne désactivée, protégée par Authelia (2FA).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backrest
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: authelia-forwardauth@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: backrest.freedom35.fr
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backrest
+                port:
+                  name: http

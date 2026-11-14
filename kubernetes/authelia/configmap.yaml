@@ -37,6 +37,7 @@ data:
         - domain:
             - 'home.freedom35.fr'
             - 'mainsail.freedom35.fr'
+            - 'backrest.freedom35.fr'
           policy: 'two_factor'
 
     session:
@@ -107,7 +108,7 @@ data:
             require_pkce: true
             pkce_challenge_method: 'S256'
             redirect_uris:
-              - 'https://cloud.freedom35.fr/apps/user_oidc/code'
+              - 'https://nextcloud.freedom35.fr/apps/user_oidc/code'
             scopes: ['openid', 'email', 'profile', 'groups']
             response_types: ['code']
             grant_types: ['authorization_code']
@@ -121,8 +122,8 @@ data:
             authorization_policy: 'two_factor'
             consent_mode: 'implicit'
             redirect_uris:
-              - 'https://photos.freedom35.fr/auth/login'
-              - 'https://photos.freedom35.fr/user-settings'
+              - 'https://immich.freedom35.fr/auth/login'
+              - 'https://immich.freedom35.fr/user-settings'
               - 'app.immich:///oauth-callback' # application mobile
             scopes: ['openid', 'email', 'profile']
             response_types: ['code']

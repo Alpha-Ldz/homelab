@@ -10,7 +10,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: cloud.freedom35.fr
+    - host: nextcloud.freedom35.fr
       http:
         paths:
           - path: /
