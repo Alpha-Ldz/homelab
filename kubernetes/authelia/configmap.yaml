@@ -57,6 +57,48 @@ data:
       local:
         path: '/data/db.sqlite3'
 
+    # Fournisseur d'identité OIDC (SSO) : Homarr, Portainer.
+    # Secrets dans le Secret authelia-oidc (monté sur /secrets/oidc), lus via le filtre template.
+    identity_providers:
+      oidc:
+        jwks:
+          - key_id: 'main'
+            algorithm: 'RS256'
+            use: 'sig'
+            key: {{ secret "/secrets/oidc/jwks.pem" | mindent 10 "|" | msquote }}
+        claims_policies:
+          # Homarr lit les groupes dans l'id_token
+          with_groups:
+            id_token: ['email', 'email_verified', 'name', 'preferred_username', 'groups']
+        clients:
+          - client_id: 'homarr'
+            client_name: 'Homarr'
+            client_secret: '{{ secret "/secrets/oidc/HOMARR_CLIENT_SECRET_DIGEST" }}'
+            public: false
+            authorization_policy: 'two_factor'
+            consent_mode: 'implicit'
+            claims_policy: 'with_groups'
+            redirect_uris:
+              - 'https://home.freedom35.fr/api/auth/callback/oidc'
+            scopes: ['openid', 'email', 'profile', 'groups']
+            response_types: ['code']
+            grant_types: ['authorization_code']
+            token_endpoint_auth_method: 'client_secret_basic'
+          - client_id: 'portainer'
+            client_name: 'Portainer'
+            client_secret: '{{ secret "/secrets/oidc/PORTAINER_CLIENT_SECRET_DIGEST" }}'
+            public: false
+            authorization_policy: 'two_factor'
+            consent_mode: 'implicit'
+            redirect_uris:
+              # Portainer n'est pas publié : accès via Tailscale uniquement
+              - 'https://raspberrypi.tail0c5f5e.ts.net:30779'
+            scopes: ['openid', 'email', 'profile', 'groups']
+            response_types: ['code']
+            grant_types: ['authorization_code']
+            token_endpoint_auth_method: 'client_secret_post'
+            userinfo_signed_response_alg: 'none'
+
     # Pas de SMTP pour l'instant : les codes de vérification (enregistrement TOTP)
     # sont écrits dans ce fichier :
     #   kubectl -n authelia exec deploy/authelia -- cat /data/notification.txt

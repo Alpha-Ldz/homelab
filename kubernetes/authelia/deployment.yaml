@@ -34,12 +34,20 @@ spec:
               value: /secrets/STORAGE_ENCRYPTION_KEY
             - name: AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE
               value: /secrets/JWT_SECRET
+            - name: AUTHELIA_IDENTITY_PROVIDERS_OIDC_HMAC_SECRET_FILE
+              value: /secrets/oidc/HMAC_SECRET
+            # Active {{ secret "..." }} dans configuration.yml (clé JWKS, digests clients)
+            - name: X_AUTHELIA_CONFIG_FILTERS
+              value: template
           volumeMounts:
             - name: config
               mountPath: /config
               readOnly: true
             - name: secrets
               mountPath: /secrets
+              readOnly: true
+            - name: oidc
+              mountPath: /secrets/oidc
               readOnly: true
             - name: users
               mountPath: /users
@@ -70,6 +78,9 @@ spec:
         - name: secrets
           secret:
             secretName: authelia-secrets
+        - name: oidc
+          secret:
+            secretName: authelia-oidc
         - name: users
           secret:
             secretName: authelia-users

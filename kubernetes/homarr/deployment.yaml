@@ -34,6 +34,27 @@ spec:
                 secretKeyRef:
                   name: homarr-secrets
                   key: SECRET_ENCRYPTION_KEY
+            # Connexion SSO via Authelia (OIDC) : pas de comptes locaux.
+            # Droits admin : groupe Authelia "admins" (choisi à l'onboarding).
+            - name: AUTH_PROVIDERS
+              value: oidc
+            - name: AUTH_OIDC_ISSUER
+              value: https://auth.freedom35.fr
+            - name: AUTH_OIDC_CLIENT_ID
+              value: homarr
+            - name: AUTH_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: homarr-oidc
+                  key: AUTH_OIDC_CLIENT_SECRET
+            - name: AUTH_OIDC_CLIENT_NAME
+              value: Authelia
+            - name: AUTH_OIDC_AUTO_LOGIN
+              value: "true"
+            - name: AUTH_OIDC_SCOPE_OVERWRITE
+              value: openid email profile groups
+            - name: AUTH_LOGOUT_REDIRECT_URL
+              value: https://auth.freedom35.fr/logout
           volumeMounts:
             - name: data
               mountPath: /appdata
