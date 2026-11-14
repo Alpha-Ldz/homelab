@@ -1,0 +1,19 @@
+# Pas de forward-auth : l'app mobile utilise l'API directement.
+# Connexion : comptes Immich + OAuth Authelia (mot de passe + TOTP).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: immich
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: photos.freedom35.fr
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: server
+                port:
+                  name: http

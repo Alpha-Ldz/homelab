@@ -66,9 +66,8 @@ spec:
             - name: printer-data
               mountPath: /opt/printer_data/config
               subPath: config
-            - name: printer-data
+            - name: gcodes
               mountPath: /opt/printer_data/gcodes
-              subPath: gcodes
             - name: printer-data
               mountPath: /opt/printer_data/logs
               subPath: logs
@@ -99,9 +98,8 @@ spec:
             - name: printer-data
               mountPath: /opt/printer_data/config
               subPath: config
-            - name: printer-data
+            - name: gcodes
               mountPath: /opt/printer_data/gcodes
-              subPath: gcodes
             - name: printer-data
               mountPath: /opt/printer_data/logs
               subPath: logs
@@ -138,3 +136,8 @@ spec:
         - name: dev
           hostPath:
             path: /dev
+        # Gcodes partagés avec Nextcloud (/srv/files : futurs disques de données)
+        - name: gcodes
+          hostPath:
+            path: /srv/files/3d/gcodes
+            type: Directory

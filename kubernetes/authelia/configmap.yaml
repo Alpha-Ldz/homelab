@@ -98,6 +98,37 @@ data:
             grant_types: ['authorization_code']
             token_endpoint_auth_method: 'client_secret_post'
             userinfo_signed_response_alg: 'none'
+          - client_id: 'nextcloud'
+            client_name: 'Nextcloud'
+            client_secret: '{{ secret "/secrets/oidc/NEXTCLOUD_CLIENT_SECRET_DIGEST" }}'
+            public: false
+            authorization_policy: 'two_factor'
+            consent_mode: 'implicit'
+            require_pkce: true
+            pkce_challenge_method: 'S256'
+            redirect_uris:
+              - 'https://cloud.freedom35.fr/apps/user_oidc/code'
+            scopes: ['openid', 'email', 'profile', 'groups']
+            response_types: ['code']
+            grant_types: ['authorization_code']
+            # user_oidc choisit client_secret_post quand le fournisseur le propose
+            token_endpoint_auth_method: 'client_secret_post'
+            userinfo_signed_response_alg: 'none'
+          - client_id: 'immich'
+            client_name: 'Immich'
+            client_secret: '{{ secret "/secrets/oidc/IMMICH_CLIENT_SECRET_DIGEST" }}'
+            public: false
+            authorization_policy: 'two_factor'
+            consent_mode: 'implicit'
+            redirect_uris:
+              - 'https://photos.freedom35.fr/auth/login'
+              - 'https://photos.freedom35.fr/user-settings'
+              - 'app.immich:///oauth-callback' # application mobile
+            scopes: ['openid', 'email', 'profile']
+            response_types: ['code']
+            grant_types: ['authorization_code']
+            token_endpoint_auth_method: 'client_secret_post'
+            userinfo_signed_response_alg: 'none'
 
     # Pas de SMTP pour l'instant : les codes de vérification (enregistrement TOTP)
     # sont écrits dans ce fichier :

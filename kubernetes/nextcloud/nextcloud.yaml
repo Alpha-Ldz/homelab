@@ -1,0 +1,151 @@
+# Code Nextcloud (/var/www/html) sur le NVMe ; fichiers utilisateurs sur /srv/files
+# (dossier hôte qui deviendra le pool des disques de données).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nextcloud-html
+spec:
+  storageClassName: local-path
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nextcloud
+  labels:
+    app: nextcloud
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nextcloud
+  template:
+    metadata:
+      labels:
+        app: nextcloud
+    spec:
+      nodeSelector:
+        homelab/always-on: "true"
+      containers:
+        - name: nextcloud
+          image: nextcloud:35.0.3-apache
+          env: &env
+            - name: POSTGRES_HOST
+              value: postgres
+            - name: POSTGRES_DB
+              value: nextcloud
+            - name: POSTGRES_USER
+              value: nextcloud
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nextcloud-secrets
+                  key: POSTGRES_PASSWORD
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_HOST_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nextcloud-secrets
+                  key: REDIS_PASSWORD
+            # Compte admin local de secours (le compte "admin" vient d'Authelia via OIDC)
+            - name: NEXTCLOUD_ADMIN_USER
+              value: ncadmin
+            - name: NEXTCLOUD_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nextcloud-secrets
+                  key: NEXTCLOUD_ADMIN_PASSWORD
+            - name: NEXTCLOUD_DATA_DIR
+              value: /var/www/data
+            - name: NEXTCLOUD_TRUSTED_DOMAINS
+              value: cloud.freedom35.fr
+            - name: TRUSTED_PROXIES
+              value: 10.42.0.0/16
+            - name: OVERWRITEPROTOCOL
+              value: https
+            - name: OVERWRITECLIURL
+              value: https://cloud.freedom35.fr
+            - name: PHP_MEMORY_LIMIT
+              value: 1G
+            - name: PHP_UPLOAD_LIMIT
+              value: 16G
+            - name: TZ
+              value: Europe/Paris
+          ports:
+            - name: http
+              containerPort: 80
+          # Première installation longue sur un Pi : jusqu'à 15 min tolérées
+          startupProbe:
+            httpGet: &probe
+              path: /status.php
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: cloud.freedom35.fr
+            periodSeconds: 10
+            failureThreshold: 90
+          readinessProbe:
+            httpGet: *probe
+            periodSeconds: 15
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet: *probe
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+          volumeMounts: &mounts
+            - name: html
+              mountPath: /var/www/html
+            - name: data
+              mountPath: /var/www/data
+            - name: files-3d
+              mountPath: /mnt/3d
+        # Tâches de fond Nextcloud (cron.php toutes les 5 min)
+        - name: cron
+          image: nextcloud:35.0.3-apache
+          command: ["/cron.sh"]
+          env: *env
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              memory: 1Gi
+          volumeMounts: *mounts
+      volumes:
+        - name: html
+          persistentVolumeClaim:
+            claimName: nextcloud-html
+        - name: data
+          hostPath:
+            path: /srv/files/nextcloud
+            type: Directory
+        # Partagé avec Klipper (gcodes), monté en stockage externe dans Nextcloud
+        - name: files-3d
+          hostPath:
+            path: /srv/files/3d
+            type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nextcloud
+spec:
+  selector:
+    app: nextcloud
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

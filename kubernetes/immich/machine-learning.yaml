@@ -1,0 +1,81 @@
+# Reconnaissance faciale / recherche intelligente, sur le CPU du Pi pour l'instant.
+# Plus tard : une 2e instance (image -cuda) sur le worker GPU "sleeper", déclarée
+# en premier dans Administration > Machine Learning (URLs essayées dans l'ordre,
+# repli sur celle-ci quand le PC dort).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-cache
+spec:
+  storageClassName: local-path
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: machine-learning
+  labels:
+    app: immich-machine-learning
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: immich-machine-learning
+  template:
+    metadata:
+      labels:
+        app: immich-machine-learning
+    spec:
+      nodeSelector:
+        homelab/always-on: "true"
+      containers:
+        - name: machine-learning
+          image: ghcr.io/immich-app/immich-machine-learning:v3.4.1
+          env:
+            - name: MACHINE_LEARNING_MODEL_REVISION
+              value: v2
+            - name: TZ
+              value: Europe/Paris
+            # Économie de RAM sur le Pi : un worker, modèles déchargés après 5 min d'inactivité
+            - name: MACHINE_LEARNING_WORKERS
+              value: "1"
+            - name: MACHINE_LEARNING_MODEL_TTL
+              value: "300"
+          ports:
+            - name: http
+              containerPort: 3003
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 3Gi
+          volumeMounts:
+            - name: cache
+              mountPath: /cache
+      volumes:
+        - name: cache
+          persistentVolumeClaim:
+            claimName: model-cache
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: machine-learning
+spec:
+  selector:
+    app: immich-machine-learning
+  ports:
+    - name: http
+      port: 3003
+      targetPort: http

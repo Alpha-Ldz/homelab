@@ -1,0 +1,22 @@
+# Pas de forward-auth Authelia ici : les clients de synchro (desktop/mobile, WebDAV)
+# doivent pouvoir joindre Nextcloud. La connexion web passe par OIDC (Authelia + TOTP),
+# les clients utilisent le "login flow" (navigateur) puis un mot de passe d'application.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nextcloud
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: nextcloud-dav-redirect@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: cloud.freedom35.fr
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nextcloud
+                port:
+                  name: http

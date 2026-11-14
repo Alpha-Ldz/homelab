@@ -1,0 +1,16 @@
+# Nextcloud 35 + PostgreSQL 17 + Redis 8
+# Prérequis (hors git) : Secret nextcloud-secrets (voir secret.yaml.example)
+#   et dossiers hôte /srv/files/nextcloud (uid 33) et /srv/files/3d
+# Déploiement : kubectl apply -k kubernetes/nextcloud
+# Configuration post-installation : ./post-install.sh
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: nextcloud
+
+resources:
+  - namespace.yaml
+  - postgres.yaml
+  - redis.yaml
+  - nextcloud.yaml
+  - middleware.yaml
+  - ingress.yaml

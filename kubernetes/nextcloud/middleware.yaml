@@ -1,0 +1,10 @@
+# Découverte CalDAV/CardDAV (clients agenda/contacts) en HTTPS
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: dav-redirect
+spec:
+  redirectRegex:
+    regex: ^https?://([^/]+)/\.well-known/(card|cal)dav
+    replacement: https://${1}/remote.php/dav/
+    permanent: true

@@ -1,0 +1,15 @@
+# Immich v3 — photothèque (images et versions issues du docker-compose officiel)
+# Prérequis (hors git) : Secret immich-secrets (voir secret.yaml.example)
+#   et dossier hôte /srv/files/photos
+# Déploiement : kubectl apply -k kubernetes/immich
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: immich
+
+resources:
+  - namespace.yaml
+  - database.yaml
+  - valkey.yaml
+  - machine-learning.yaml
+  - server.yaml
+  - ingress.yaml
