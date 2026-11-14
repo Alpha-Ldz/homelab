@@ -2,9 +2,10 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: authelia-config
-  namespace: authelia
 data:
   configuration.yml: |
+    # Secrets fournis par variables d'environnement *_FILE (Secret authelia-secrets).
+    # Utilisateurs : Secret authelia-users (voir users_database.yml.example).
     theme: dark
 
     server:
@@ -12,82 +13,53 @@ data:
       endpoints:
         authz:
           forward-auth:
-            implementation: ForwardAuth
+            implementation: 'ForwardAuth'
 
     log:
-      level: info
-      format: text
+      level: 'info'
 
     totp:
-      issuer: freedom35.fr
+      issuer: 'freedom35.fr'
       period: 30
       skew: 1
 
     authentication_backend:
       file:
-        path: /config/users_database.yml
+        path: '/users/users_database.yml'
+        watch: true
         password:
-          algorithm: argon2id
-          iterations: 1
-          key_length: 32
-          salt_length: 16
-          memory: 1024
-          parallelism: 8
+          algorithm: 'argon2'
 
     access_control:
-      default_policy: deny
+      default_policy: 'deny'
       rules:
-        - domain: auth.freedom35.fr
-          policy: bypass
-        - domain: home.freedom35.fr
-          policy: one_factor
-        - domain: mainsail.freedom35.fr
-          policy: one_factor
-        - domain: stf.freedom35.fr
-          policy: two_factor
-        - domain: ai.freedom35.fr
-          policy: one_factor
-        - domain: ollama.freedom35.fr
-          policy: one_factor
-        - domain: vnc.freedom35.fr
-          policy: two_factor
-        - domain: openclaw.freedom35.fr
-          policy: one_factor
+        # Mot de passe + TOTP obligatoires
+        - domain:
+            - 'home.freedom35.fr'
+            - 'mainsail.freedom35.fr'
+          policy: 'two_factor'
 
     session:
-      name: authelia_session
       cookies:
-        - domain: freedom35.fr
-          authelia_url: https://auth.freedom35.fr
-          default_redirection_url: https://home.freedom35.fr
-          expiration: 1h
-          inactivity: 5m
-          remember_me: 1M
+        - domain: 'freedom35.fr'
+          authelia_url: 'https://auth.freedom35.fr'
+          default_redirection_url: 'https://home.freedom35.fr'
+          expiration: '12h'
+          inactivity: '2h'
+          remember_me: '1M'
 
     regulation:
       max_retries: 3
-      find_time: 2m
-      ban_time: 5m
+      find_time: '2m'
+      ban_time: '15m'
 
     storage:
       local:
-        path: /data/db.sqlite3
+        path: '/data/db.sqlite3'
 
+    # Pas de SMTP pour l'instant : les codes de vérification (enregistrement TOTP)
+    # sont écrits dans ce fichier :
+    #   kubectl -n authelia exec deploy/authelia -- cat /data/notification.txt
     notifier:
       filesystem:
-        filename: /data/notification.txt
-
-    identity_validation:
-      reset_password:
-        jwt_secret: '{{ secret "/secrets/JWT_SECRET" }}'
-
-  users_database.yml: |
-    users:
-      admin:
-        disabled: false
-        displayname: "Admin"
-        password: "$argon2id$v=19$m=65536,t=3,p=4$rQ7DoJVuiRAcSyDQnyEXQA$Lw8VxfU3E4BEG1GIc99I5rUDuXpY0/MCRp4gThcUCJQ"
-        email: admin@freedom35.fr
-        groups:
-          - admins
-          - users
+        filename: '/data/notification.txt'

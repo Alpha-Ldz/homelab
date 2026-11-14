@@ -1,0 +1,17 @@
+# Middleware Traefik à ajouter sur tout Ingress à protéger :
+#   metadata.annotations:
+#     traefik.ingress.kubernetes.io/router.middlewares: authelia-forwardauth@kubernetescrd
+# La politique (one_factor / two_factor) se règle dans access_control (configmap.yaml).
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: forwardauth
+spec:
+  forwardAuth:
+    address: http://authelia.authelia.svc.cluster.local:9091/api/authz/forward-auth
+    trustForwardHeader: true
+    authResponseHeaders:
+      - Remote-User
+      - Remote-Groups
+      - Remote-Email
+      - Remote-Name

@@ -1,0 +1,17 @@
+# Ne pas committer le vrai fichier. Il est stocké dans le Secret authelia-users :
+#   kubectl -n authelia create secret generic authelia-users \
+#     --from-file=users_database.yml=./users_database.yml
+#
+# Générer un hash de mot de passe :
+#   kubectl -n authelia exec -it deploy/authelia -- authelia crypto hash generate argon2
+#
+# Changer le mot de passe : remplacer le hash puis recréer le Secret
+# (Authelia recharge le fichier automatiquement, watch: true).
+users:
+  admin:
+    disabled: false
+    displayname: 'Admin'
+    password: '$argon2id$v=19$m=65536,t=3,p=4$CHANGE_ME'
+    email: 'admin@freedom35.fr'
+    groups:
+      - 'admins'

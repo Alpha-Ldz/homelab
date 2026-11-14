@@ -1,38 +1,13 @@
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: homarr-config
-  namespace: homarr
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: longhorn
-  resources:
-    requests:
-      storage: 1Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: homarr-data
-  namespace: homarr
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: longhorn
-  resources:
-    requests:
-      storage: 1Gi
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: homarr
-  namespace: homarr
   labels:
     app: homarr
 spec:
   replicas: 1
+  strategy:
+    type: Recreate # volume RWO + base SQLite
   selector:
     matchLabels:
       app: homarr
@@ -41,57 +16,46 @@ spec:
       labels:
         app: homarr
     spec:
+      # Service "toujours allumé" : reste sur les nœuds marqués always-on (le Pi),
+      # jamais sur un worker réveillé à la demande (Wake-on-LAN).
+      nodeSelector:
+        homelab/always-on: "true"
       containers:
         - name: homarr
-          image: ghcr.io/homarr-labs/homarr:latest
-          imagePullPolicy: Always
+          image: ghcr.io/homarr-labs/homarr:v2.13.1
           ports:
-            - containerPort: 7575
-              protocol: TCP
+            - name: http
+              containerPort: 7575
           env:
             - name: TZ
-              value: "Europe/Paris"
+              value: Europe/Paris
             - name: SECRET_ENCRYPTION_KEY
-              value: "11c47366371a9a2b7b1e5e005c71aee59814875368e28737d3976af5e9d05cfb"
+              valueFrom:
+                secretKeyRef:
+                  name: homarr-secrets
+                  key: SECRET_ENCRYPTION_KEY
           volumeMounts:
-            - name: config
-              mountPath: /appdata/homarr/configs
             - name: data
-              mountPath: /appdata/homarr/data
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 7575
-            initialDelaySeconds: 30
-            periodSeconds: 10
+              mountPath: /appdata
           readinessProbe:
             httpGet:
               path: /
-              port: 7575
-            initialDelaySeconds: 15
-            periodSeconds: 5
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
       volumes:
-        - name: config
-          persistentVolumeClaim:
-            claimName: homarr-config
         - name: data
           persistentVolumeClaim:
             claimName: homarr-data
-      restartPolicy: Always
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: homarr
-  namespace: homarr
-  labels:
-    app: homarr
-spec:
-  type: ClusterIP
-  selector:
-    app: homarr
-  ports:
-    - name: http
-      port: 7575
-      targetPort: 7575
-      protocol: TCP

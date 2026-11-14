@@ -1,0 +1,13 @@
+# Homarr — dashboard du homelab
+# Prérequis : le Secret homarr-secrets (voir secret.yaml.example)
+# Déploiement : kubectl apply -k kubernetes/homarr
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: homarr
+
+resources:
+  - namespace.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml

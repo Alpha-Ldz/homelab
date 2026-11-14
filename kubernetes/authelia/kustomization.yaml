@@ -1,0 +1,16 @@
+# Authelia — SSO + 2FA TOTP devant les services (forward-auth Traefik)
+# Prérequis (hors git) : Secrets authelia-secrets et authelia-users
+#   voir secrets.yaml.example et users_database.yml.example
+# Déploiement : kubectl apply -k kubernetes/authelia
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: authelia
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  - middleware.yaml
+  - ingress.yaml

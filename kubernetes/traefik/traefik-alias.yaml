@@ -1,0 +1,16 @@
+# Les routes du tunnel (dashboard Cloudflare) visent l'ancien Traefik :
+#   http://traefik.traefik.svc.cluster.local:80
+# Cet alias DNS les redirige vers le Traefik intégré à K3s, sans toucher au dashboard.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: traefik
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik
+  namespace: traefik
+spec:
+  type: ExternalName
+  externalName: traefik.kube-system.svc.cluster.local

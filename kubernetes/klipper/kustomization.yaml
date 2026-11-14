@@ -1,0 +1,22 @@
+# Klipper + Moonraker + Mainsail — Creality Ender-5 S1 (USB CH340)
+# Déploiement : kubectl apply -k kubernetes/klipper
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: klipper
+
+resources:
+  - namespace.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+
+# Config "graine" : copiée dans le PVC au premier démarrage uniquement
+# (Klipper SAVE_CONFIG et l'éditeur Mainsail modifient ensuite la copie du PVC).
+configMapGenerator:
+  - name: klipper-config-seed
+    files:
+      - config/printer.cfg
+      - config/macro_bed_mesh.cfg
+      - config/PIS.cfg
+      - config/moonraker.conf

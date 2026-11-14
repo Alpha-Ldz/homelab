@@ -1,0 +1,20 @@
+# Personnalisation du Traefik intégré à K3s (déployé par Helm dans kube-system).
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    providers:
+      kubernetesCRD:
+        # Permet aux Ingress de tous les namespaces d'utiliser le middleware
+        # authelia/forwardauth (annotation authelia-forwardauth@kubernetescrd).
+        allowCrossNamespace: true
+    ports:
+      web:
+        forwardedHeaders:
+          # Faire confiance aux en-têtes X-Forwarded-* venant des pods (cloudflared) :
+          # Authelia voit ainsi le schéma d'origine https:// et non http://.
+          trustedIPs:
+            - 10.42.0.0/16

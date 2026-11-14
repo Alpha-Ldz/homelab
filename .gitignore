@@ -10,8 +10,10 @@
 
 # Kubernetes secrets (use .example files as templates)
 kubernetes/authelia/secrets.yaml
+kubernetes/authelia/users_database.yml
 kubernetes/cloudflared/secret.yaml
 kubernetes/postgres/secrets.yaml
+kubernetes/homarr/secret.yaml
 kubernetes/openclaw/values.yaml
 
 # Credentials documentation (contains real tokens)
@@ -22,7 +24,7 @@ klipper/logs/
 klipper/gcodes/
 klipper/moonraker-db/
 klipper/run/
-klipper/config/.*.bkp
+kubernetes/klipper/config/.*.bkp
 klipper/mainsail-config.json
 
 # Environment files (keep .example files)

@@ -1,0 +1,140 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: klipper
+  labels:
+    app: klipper
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # un seul pod peut tenir le port série et le volume
+  selector:
+    matchLabels:
+      app: klipper
+  template:
+    metadata:
+      labels:
+        app: klipper
+    spec:
+      # L'imprimante est branchée en USB sur le Pi : le pod doit y tourner.
+      nodeSelector:
+        kubernetes.io/hostname: raspberrypi
+      # Arborescence prind : /opt/printer_data/{config,gcodes,logs,database} sur le PVC,
+      # /opt/printer_data/run (socket klippy) partagé en mémoire entre les conteneurs.
+      # Chaque sous-dossier est monté via subPath : les images déclarent des VOLUME
+      # sur ces chemins, qui masqueraient un montage unique de /opt/printer_data.
+      initContainers:
+        - name: seed-config
+          image: busybox:1.37.0
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /data/config /data/gcodes /data/logs /data/database
+              for f in /seed/*; do
+                n=$(basename "$f")
+                [ -e "/data/config/$n" ] || { cp "$f" "/data/config/$n"; echo "seeded $n"; }
+              done
+          volumeMounts:
+            - name: printer-data
+              mountPath: /data
+            - name: config-seed
+              mountPath: /seed
+      containers:
+        - name: klipper
+          image: mkuf/klipper:v0.13.0-827-g29d4ec2d6
+          args:
+            - -I
+            - printer_data/run/klipper.tty
+            - -a
+            - printer_data/run/klipper.sock
+            - printer_data/config/printer.cfg
+            - -l
+            - printer_data/logs/klippy.log
+          securityContext:
+            privileged: true # accès au port série /dev/serial/by-id/...
+            runAsUser: 0
+            capabilities:
+              add: ["SYS_NICE"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: printer-data
+              mountPath: /opt/printer_data/config
+              subPath: config
+            - name: printer-data
+              mountPath: /opt/printer_data/gcodes
+              subPath: gcodes
+            - name: printer-data
+              mountPath: /opt/printer_data/logs
+              subPath: logs
+            - name: run
+              mountPath: /opt/printer_data/run
+            - name: dev
+              mountPath: /dev
+        - name: moonraker
+          image: mkuf/moonraker:v0.11.0-4-gb559b9a
+          args: ["-d", "/opt/printer_data"]
+          securityContext:
+            runAsUser: 0 # mêmes fichiers que Klipper (SAVE_CONFIG / éditeur Mainsail)
+          ports:
+            - name: moonraker
+              containerPort: 7125
+          readinessProbe:
+            httpGet:
+              path: /server/info
+              port: 7125
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: printer-data
+              mountPath: /opt/printer_data/config
+              subPath: config
+            - name: printer-data
+              mountPath: /opt/printer_data/gcodes
+              subPath: gcodes
+            - name: printer-data
+              mountPath: /opt/printer_data/logs
+              subPath: logs
+            - name: printer-data
+              mountPath: /opt/printer_data/database
+              subPath: database
+            - name: run
+              mountPath: /opt/printer_data/run
+        - name: mainsail
+          image: ghcr.io/mainsail-crew/mainsail:v2.19.0
+          ports:
+            - name: http
+              containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+      volumes:
+        - name: printer-data
+          persistentVolumeClaim:
+            claimName: printer-data
+        - name: config-seed
+          configMap:
+            name: klipper-config-seed
+        - name: run
+          emptyDir:
+            medium: Memory
+        - name: dev
+          hostPath:
+            path: /dev

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: printer-data
+  labels:
+    app: klipper
+spec:
+  # local-path : volume sur le disque du nœud (le Pi), cohérent avec l'épinglage du pod
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

@@ -1,0 +1,67 @@
+# Mainsail (UI) et Moonraker (API + websocket) derrière Traefik, sur le même hôte.
+# Exposé via Cloudflare Tunnel, protégé par Authelia (2FA TOTP).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mainsail
+  annotations:
+    # Authentification Authelia (mot de passe + TOTP)
+    traefik.ingress.kubernetes.io/router.middlewares: authelia-forwardauth@kubernetescrd
+  labels:
+    app: klipper
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: mainsail.freedom35.fr
+      http:
+        paths:
+          # Chemins de l'API Moonraker (même découpage que prind)
+          - path: /websocket
+            pathType: Prefix
+            backend:
+              service:
+                name: klipper
+                port:
+                  name: moonraker
+          - path: /printer
+            pathType: Prefix
+            backend:
+              service:
+                name: klipper
+                port:
+                  name: moonraker
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: klipper
+                port:
+                  name: moonraker
+          - path: /access
+            pathType: Prefix
+            backend:
+              service:
+                name: klipper
+                port:
+                  name: moonraker
+          - path: /machine
+            pathType: Prefix
+            backend:
+              service:
+                name: klipper
+                port:
+                  name: moonraker
+          - path: /server
+            pathType: Prefix
+            backend:
+              service:
+                name: klipper
+                port:
+                  name: moonraker
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: klipper
+                port:
+                  name: http

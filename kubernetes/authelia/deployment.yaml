@@ -1,25 +1,13 @@
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: authelia-data
-  namespace: authelia
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: longhorn
-  resources:
-    requests:
-      storage: 1Gi
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: authelia
-  namespace: authelia
   labels:
     app: authelia
 spec:
   replicas: 1
+  strategy:
+    type: Recreate # base SQLite sur volume RWO
   selector:
     matchLabels:
       app: authelia
@@ -28,22 +16,24 @@ spec:
       labels:
         app: authelia
     spec:
+      nodeSelector:
+        homelab/always-on: "true"
+      enableServiceLinks: false # évite les variables AUTHELIA_* injectées par le Service
       containers:
         - name: authelia
-          image: authelia/authelia:latest
-          imagePullPolicy: Always
+          image: authelia/authelia:4.39.28
           ports:
-            - containerPort: 9091
-              protocol: TCP
+            - name: http
+              containerPort: 9091
           env:
             - name: TZ
-              value: "Europe/Paris"
-            - name: X_AUTHELIA_CONFIG_FILTERS
-              value: "template"
+              value: Europe/Paris
             - name: AUTHELIA_SESSION_SECRET_FILE
               value: /secrets/SESSION_SECRET
             - name: AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE
               value: /secrets/STORAGE_ENCRYPTION_KEY
+            - name: AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE
+              value: /secrets/JWT_SECRET
           volumeMounts:
             - name: config
               mountPath: /config
@@ -51,20 +41,28 @@ spec:
             - name: secrets
               mountPath: /secrets
               readOnly: true
+            - name: users
+              mountPath: /users
+              readOnly: true
             - name: data
               mountPath: /data
-          livenessProbe:
-            httpGet:
-              path: /api/health
-              port: 9091
-            initialDelaySeconds: 30
-            periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /api/health
-              port: 9091
-            initialDelaySeconds: 15
+              port: http
             periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
       volumes:
         - name: config
           configMap:
@@ -72,7 +70,9 @@ spec:
         - name: secrets
           secret:
             secretName: authelia-secrets
+        - name: users
+          secret:
+            secretName: authelia-users
         - name: data
           persistentVolumeClaim:
             claimName: authelia-data
-      restartPolicy: Always

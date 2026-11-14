@@ -1,0 +1,23 @@
+# Exposé via Cloudflare Tunnel, protégé par Authelia (2FA TOTP).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: homarr
+  annotations:
+    # Authentification Authelia (mot de passe + TOTP)
+    traefik.ingress.kubernetes.io/router.middlewares: authelia-forwardauth@kubernetescrd
+  labels:
+    app: homarr
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: home.freedom35.fr
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: homarr
+                port:
+                  name: http
