@@ -40,6 +40,16 @@ spec:
               mountPath: /data
             - name: config-seed
               mountPath: /seed
+        # Moonraker expose les dossiers config/ et docs/ de Klipper (exemples et doc dans
+        # Mainsail) : il les cherche dans /opt/klipper, absent de son image.
+        - name: klipper-docs
+          image: mkuf/klipper:v0.13.0-827-g29d4ec2d6
+          command: ["cp", "-r", "/opt/klipper/config", "/opt/klipper/docs", "/share/"]
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: klipper-docs
+              mountPath: /share
       containers:
         - name: klipper
           image: mkuf/klipper:v0.13.0-827-g29d4ec2d6
@@ -108,6 +118,9 @@ spec:
               subPath: database
             - name: run
               mountPath: /opt/printer_data/run
+            - name: klipper-docs
+              mountPath: /opt/klipper
+              readOnly: true
         - name: mainsail
           image: ghcr.io/mainsail-crew/mainsail:v2.19.0
           ports:
@@ -133,6 +146,8 @@ spec:
         - name: run
           emptyDir:
             medium: Memory
+        - name: klipper-docs
+          emptyDir: {}
         - name: dev
           hostPath:
             path: /dev

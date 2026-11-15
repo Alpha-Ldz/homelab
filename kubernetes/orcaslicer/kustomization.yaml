@@ -1,0 +1,16 @@
+# OrcaSlicer — trancheur dans le navigateur (KasmVNC), https://orca.freedom35.fr
+# Déploiement : kubectl apply -k kubernetes/orcaslicer
+#
+# - Interface protégée par Authelia (2FA), pas d'authentification KasmVNC.
+# - Les gcodes exportés dans /gcodes arrivent directement dans Mainsail
+#   (/srv/files/3d/gcodes, partagé avec Klipper et Nextcloud).
+# - Envoi direct possible à l'imprimante : « Physical printer » Klipper,
+#   hôte http://klipper.klipper.svc.cluster.local:7125
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: orcaslicer
+
+resources:
+  - namespace.yaml
+  - orcaslicer.yaml
+  - ingress.yaml

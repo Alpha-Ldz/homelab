@@ -1,0 +1,20 @@
+# Interface OrcaSlicer : pas d'authentification KasmVNC, protégée par Authelia (2FA).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: orcaslicer
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: authelia-forwardauth@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: orca.freedom35.fr
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: orcaslicer
+                port:
+                  name: http

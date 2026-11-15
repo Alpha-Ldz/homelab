@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: orcaslicer-config
+spec:
+  storageClassName: local-path
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orcaslicer
+  labels:
+    app: orcaslicer
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: orcaslicer
+  template:
+    metadata:
+      labels:
+        app: orcaslicer
+    spec:
+      # Écrit dans /srv/files/3d/gcodes (hostPath) : doit tourner sur le Pi
+      nodeSelector:
+        kubernetes.io/hostname: raspberrypi
+      containers:
+        - name: orcaslicer
+          image: lscr.io/linuxserver/orcaslicer:v2.5.1-ls51
+          env:
+            - name: TZ
+              value: Europe/Paris
+            # www-data, comme Nextcloud : gcodes modifiables depuis Nextcloud
+            - name: PUID
+              value: "33"
+            - name: PGID
+              value: "33"
+            - name: TITLE
+              value: OrcaSlicer
+          ports:
+            - name: http
+              containerPort: 3000
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 3Gi
+          volumeMounts:
+            # Profils, préférences, projets (~/.config/OrcaSlicer)
+            - name: config
+              mountPath: /config
+            - name: gcodes
+              mountPath: /gcodes
+            # KasmVNC / navigateur Chromium-like : /dev/shm trop petit par défaut
+            - name: shm
+              mountPath: /dev/shm
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: orcaslicer-config
+        - name: gcodes
+          hostPath:
+            path: /srv/files/3d/gcodes
+            type: Directory
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orcaslicer
+spec:
+  selector:
+    app: orcaslicer
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http

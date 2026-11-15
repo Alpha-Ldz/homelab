@@ -1,6 +1,6 @@
 # Homelab — état actuel
 
-_Mis à jour le 14/11/2026._
+_Mis à jour le 15/11/2026._
 
 Cluster **K3s mono-nœud** sur un Raspberry Pi 5, piloté par des manifests Kubernetes
 versionnés dans ce dépôt (`kubectl apply -k kubernetes/<service>`). Un PC x86 avec GPU
@@ -16,7 +16,7 @@ versionnés dans ce dépôt (`kubectl apply -k kubernetes/<service>`). Un PC x86
 │                           │   └─ forward-auth ──▶ Authelia (SSO + TOTP, OIDC)│
 │        ┌──────────┬───────┴───┬───────────┬──────────┬──────────┐            │
 │     Homarr   Mainsail/Klipper  Nextcloud   Immich    Backrest   Portainer    │
-│                    │ USB          │          │          │       (NodePort)   │
+│              OrcaSlicer │ USB     │          │          │       (NodePort)   │
 │              Ender-5 S1           └──── /srv/files ─────┘                    │
 │                                     (futurs disques 4×5 To)                  │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -57,6 +57,7 @@ versionnés dans ce dépôt (`kubectl apply -k kubernetes/<service>`). Un PC x86
 | Nextcloud | https://nextcloud.freedom35.fr | 35.0.3 (+ PostgreSQL 17, Redis 8) | OIDC (2FA) ; secours `ncadmin` via `/login?direct=1` | `kubernetes/nextcloud` |
 | Immich | https://immich.freedom35.fr · Tailscale `:30283` | 3.4.1 | OIDC (2FA) | `kubernetes/immich` |
 | Backrest | https://backrest.freedom35.fr | 1.14.1 | forward-auth (2FA) | `kubernetes/backup` |
+| OrcaSlicer (trancheur, KasmVNC) | https://orca.freedom35.fr | 2.5.1 (linuxserver ls51) | forward-auth (2FA) | `kubernetes/orcaslicer` |
 | Portainer | https://raspberrypi.tail0c5f5e.ts.net:30779 (Tailscale) | CE 2.45.3 | OIDC (2FA) ; compte local de secours | manifest officiel `ce2-45` |
 | cloudflared | — | 2026.11.0 | token du tunnel | `kubernetes/cloudflared` |
 | Traefik | — | intégré à K3s | — | `kubernetes/traefik` (HelmChartConfig) |
@@ -64,7 +65,7 @@ versionnés dans ce dépôt (`kubectl apply -k kubernetes/<service>`). Un PC x86
 ### Authentification (Authelia)
 
 - Compte unique `admin` (groupe `admins`), utilisateurs dans le Secret `authelia/authelia-users`.
-- `default_policy: deny` ; `two_factor` pour home, mainsail, backrest.
+- `default_policy: deny` ; `two_factor` pour home, mainsail, backrest, orca.
 - **Forward-auth** : annotation `traefik.ingress.kubernetes.io/router.middlewares: authelia-forwardauth@kubernetescrd`
   sur l'Ingress + règle dans `access_control` (`kubernetes/authelia/configmap.yaml`).
 - **OIDC** (SSO) : clients `homarr`, `portainer`, `nextcloud`, `immich`, tous en `two_factor`.
@@ -74,19 +75,24 @@ versionnés dans ce dépôt (`kubectl apply -k kubernetes/<service>`). Un PC x86
 
 ### Imprimante 3D
 
-- Creality Ender-5 S1, firmware Klipper, USB CH340 (`/dev/serial/by-id/usb-1a86_USB_Serial-if00-port0`).
-- Pod épinglé sur le Pi ; `printer.cfg` et macros dans `kubernetes/klipper/config/`, copiés dans le
-  volume au premier démarrage uniquement (SAVE_CONFIG / l'éditeur Mainsail modifient la copie).
-- Après un redémarrage de l'imprimante : `FIRMWARE_RESTART` dans Mainsail.
+Creality Ender-5 S1 sous Klipper, plateau G10 fixe avec maillage 50×50 sauvegardé, tranchée avec
+OrcaSlicer (Cura n'est plus utilisé). Matériel, étalonnage, procédures et pièges :
+**[`kubernetes/klipper/PRINTER.md`](kubernetes/klipper/PRINTER.md)**.
+
+- La config active vit dans le volume du pod (`config/` du dépôt = seed du premier démarrage) :
+  garder les deux synchronisées (voir PRINTER.md).
+- Après un redémarrage de l'imprimante ou du pod : `FIRMWARE_RESTART` dans Mainsail.
+- OrcaSlicer exporte dans `/gcodes` (= `/srv/files/3d/gcodes`, visible dans Mainsail) ou envoie
+  directement à `http://klipper.klipper.svc.cluster.local:7125`.
 
 ## Stockage
 
 | Emplacement | Contenu | Support |
 |---|---|---|
-| `/var/lib/rancher/k3s/storage` | volumes `local-path` : bases PostgreSQL, SQLite (Authelia, Homarr), config Klipper, code Nextcloud, cache ML Immich, état Backrest | NVMe |
+| `/var/lib/rancher/k3s/storage` | volumes `local-path` : bases PostgreSQL, SQLite (Authelia, Homarr), config Klipper, profils OrcaSlicer, code Nextcloud, cache ML Immich, état Backrest | NVMe |
 | `/srv/files/nextcloud` | fichiers Nextcloud (uid 33) | NVMe → futurs disques |
 | `/srv/files/photos` | photothèque Immich | NVMe → futurs disques |
-| `/srv/files/3d/gcodes` | gcodes, partagés Klipper ↔ Nextcloud (dossier « Impression 3D ») via ACL | NVMe → futurs disques |
+| `/srv/files/3d/gcodes` | gcodes, partagés Klipper ↔ Nextcloud (dossier « Impression 3D ») ↔ OrcaSlicer via ACL | NVMe → futurs disques |
 | `/srv/files/dumps` | dumps SQL quotidiens Nextcloud / Immich | NVMe → futurs disques |
 | `/srv/files/backups/restic` | dépôt de sauvegarde | NVMe → futurs disques |
 
@@ -139,5 +145,8 @@ kubectl -n immich exec deploy/server -- immich-admin enable-password-login   # s
 - [ ] Ajouter le worker `sleeper` (Tailscale + K3s agent, taint on-demand) ; y déplacer le ML Immich (GPU)
 - [ ] Certificats HTTPS pour l'accès via Tailscale (cert-manager + DNS Cloudflare)
 - [ ] Désactiver la connexion par mot de passe dans Immich une fois l'OIDC validé
+- [ ] Imprimante : étalonner flow, pressure advance, rétraction, température, débit max ; créer les
+      profils OrcaSlicer (imprimante / Ender PLA+ / impression) — voir `kubernetes/klipper/PRINTER.md`
+- [ ] Déplacer OrcaSlicer sur `sleeper` quand il sera dans le cluster (interface lente sur le Pi)
 - [ ] Services de l'ancien cluster pas encore migrés (manifests à reprendre dans `kubernetes/`) :
       Vaultwarden, Stalwart + SnappyMail, STF, OpenClaw, Ollama + Open WebUI (GPU), PostgreSQL partagé

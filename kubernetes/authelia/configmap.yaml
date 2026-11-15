@@ -38,6 +38,7 @@ data:
             - 'home.freedom35.fr'
             - 'mainsail.freedom35.fr'
             - 'backrest.freedom35.fr'
+            - 'orca.freedom35.fr'
           policy: 'two_factor'
 
     session:
