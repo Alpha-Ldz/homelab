@@ -88,12 +88,13 @@ OrcaSlicer (Cura n'est plus utilisé). Matériel, étalonnage, procédures et pi
 | PID, rotation_distance, Z offset (2.470), maillage `g10_60` | ✅ 15/11 |
 | Profils Orca `Ender-5 S1 Klipper` / `Ender PLA+` / `0.20mm Ender-5 S1 Klipper` (`kubernetes/orcaslicer/profiles/`) | ✅ |
 | Input shaper (X mzv 64.8 · Y mzv 46) + accel max 2000 → **5000** (Klipper + Orca) | ✅ provisoire (ADXL sur support déporté) |
-| 1. Débit volumétrique max (Orca *Max flowrate*, 8 → 24 mm³/s, pas 0.5, buse 220 °C) | ⏳ **impression en cours** — lire la hauteur du 1er défaut : débit = 8 + h × 0.5, garder ~80 % |
-| 2. Tour de température au débit visé | à faire |
-| 3. Flow ratio (passes 1 et 2) | à faire |
+| 1. Débit volumétrique max (Orca *Max flowrate*, 8 → 24 mm³/s, pas 0.5, buse 220 °C) | ✅ 16/11 — défaut à h = 25.6 mm → **20.8 mm³/s** max, viser ~17 mm³/s dans le profil filament |
+| 2. Tour de température (Orca, 230 → 200 pas 5) | ✅ 16/11 — **220 °C** (1re couche 225) : 215 le plus net, 220 retenu pour garder les 17 mm³/s ; ≤ 205 trop froid (ponts mal soudés, surplombs relevés, tour arrachée à 200) |
+| 3. Flow ratio (Orca *Flow rate → YOLO (Recommended)*, base 0.98, 220 °C) | ⏳ **impression lancée le 16/11** — choisir la plaquette au dessus le plus lisse, noter sa correction gravée (ex. `+0.01`) → nouveau flow à calculer et reporter dans `Ender PLA+` |
 | 4. Pressure advance (à accel 5000) → `printer.cfg` | à faire (0.055 générique) |
 | 5. Rétraction (0.8 mm provisoire) | à faire |
 | 6. Monter les vitesses du profil jusqu'au débit max + impression de contrôle | à faire |
+| Motif périodique en Z (~2.6 mm, 2 marques nettes + 1 discrète ⇒ cycle ~8 mm = 1 tour de vis, `rotation_distance: 8`) : z-wobble, décalage en X (vu sur les petits côtés du test de débit) — Z = 1 vis + 2 tiges lisses à douilles ; vérifier coupleur, écrou, palier haut, rectitude de la vis, douilles | plus tard |
 | Refaire l'input shaper avec la future tête custom (ADXL près de la buse, CR-Touch déplacé) | plus tard |
 
 - Profils Orca : modifier dans l'interface puis recopier le JSON du volume dans le dépôt (voir PRINTER.md).
@@ -163,7 +164,7 @@ kubectl -n immich exec deploy/server -- immich-admin enable-password-login   # s
 - [ ] Ajouter le worker `sleeper` (Tailscale + K3s agent, taint on-demand) ; y déplacer le ML Immich (GPU)
 - [ ] Certificats HTTPS pour l'accès via Tailscale (cert-manager + DNS Cloudflare)
 - [ ] Désactiver la connexion par mot de passe dans Immich une fois l'OIDC validé
-- [ ] Imprimante : finir l'étalonnage filament (débit max en cours → température → flow → PA → rétraction → vitesses) — voir « Imprimante 3D » ci-dessus
+- [ ] Imprimante : finir l'étalonnage filament (débit max ✅ 20.8 → température ✅ 220 → flow → PA → rétraction → vitesses) — voir « Imprimante 3D » ci-dessus
 - [ ] Imprimante : tête custom (CR-Touch replacé, ADXL près de la buse) puis refaire l'input shaper
 - [ ] Déplacer OrcaSlicer sur `sleeper` quand il sera dans le cluster (interface lente sur le Pi)
 - [ ] Services de l'ancien cluster pas encore migrés (manifests à reprendre dans `kubernetes/`) :

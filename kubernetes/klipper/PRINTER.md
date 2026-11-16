@@ -48,7 +48,9 @@ kubectl -n klipper exec deploy/klipper -c klipper -- cat /opt/printer_data/confi
 | Input shaper | X mzv 64.8 Hz · Y mzv 46 Hz | `SHAPER_CALIBRATE` ×2 — 16/11/2026 (voir plus bas) |
 | Accélération max | 5000 mm/s² (Klipper + profils Orca) | limite conseillée pour Y ≈ 6000 — 16/11/2026 |
 | Pressure advance | 0.055 (générique) | **à étalonner** |
-| Flow, rétraction, température, débit max | — | **à étalonner** (tests intégrés d'OrcaSlicer) |
+| Débit volumétrique max | 20.8 mm³/s mesuré → 17 dans le profil | test Orca *Max flowrate* 8→24 pas 0.5, défaut à 25.6 mm, buse 220 °C — 16/11/2026 |
+| Température buse (PLA+) | 220 °C, 1re couche 225 | tour Orca 230→200 pas 5 : 215 le plus net, 220 retenu pour le débit (max mesuré à 220) ; ≤ 205 trop froid — 16/11/2026 |
+| Flow, rétraction | — | **à étalonner** (tests intégrés d'OrcaSlicer) |
 
 ### Plateau G10 et maillage
 
@@ -119,7 +121,7 @@ et hérités des presets système Creality (seules les différences sont stocké
 | Type | Nom | Hérite de | Points clés |
 |---|---|---|---|
 | Imprimante | `Ender-5 S1 Klipper` | `Creality Ender-5 S1 0.4 nozzle` | flavor Klipper, `PRINT_START`/`PRINT_END`, vignettes Mainsail, accel 5000, v 250, rétraction 0.8 mm @ 40 mm/s (provisoire) |
-| Filament | `Ender PLA+` | `Creality Generic PLA` | 205 °C (1re couche 210), plateau 60 °C (tous types de plaque → maillage `g10_60`), débit max 15 mm³/s et flow 0.98 provisoires, PA géré par Klipper |
+| Filament | `Ender PLA+` | `Creality Generic PLA` | 220 °C (1re couche 225), plateau 60 °C (tous types de plaque → maillage `g10_60`), débit max 17 mm³/s (mesuré 20.8 à 220 °C), flow 0.98 provisoire, PA géré par Klipper |
 | Impression | `0.20mm Ender-5 S1 Klipper` | `0.20mm Standard @Creality Ender5S1` | vitesses reprises du profil Cura « parfait » (200 mm/s remplissage/parois int., 120 ext.), accel 5000 (3000 paroi ext./dessus, 500 1re couche), objets étiquetés (`EXCLUDE_OBJECT`) |
 
 Installer / mettre à jour (Orca lit les presets au démarrage) :
