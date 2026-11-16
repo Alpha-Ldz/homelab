@@ -1,6 +1,6 @@
 # Imprimante 3D — Creality Ender-5 S1 sous Klipper
 
-_Mis à jour le 15/11/2026._
+_Mis à jour le 16/11/2026._
 
 | | |
 |---|---|
@@ -8,7 +8,7 @@ _Mis à jour le 15/11/2026._
 | Extrudeur / hotend | Sprite direct drive d'origine, buse 0.4 mm |
 | Palpeur | CR-Touch (clone BLTouch), offset X -12 / Y +27 |
 | Plateau | plaque **G10** (époxy-verre) fixée, non amovible |
-| Accéléromètre | RP2040 « PIS » (`config/PIS.cfg`), débranché — input shaper mesuré précédemment |
+| Accéléromètre | RP2040 + ADXL345 « PIS » (`config/PIS.cfg`), support déporté loin de la buse ; `[include PIS.cfg]` commenté hors mesure |
 | Firmware | Klipper 0.13.0 + Moonraker 0.11.0 + Mainsail 2.19.0 (`kubernetes/klipper`) |
 | Trancheur | OrcaSlicer (https://orca.freedom35.fr) — Cura n'est plus utilisé |
 | Filament de référence | Ender PLA+ 1.75 mm (190–230 °C) |
@@ -45,7 +45,8 @@ kubectl -n klipper exec deploy/klipper -c klipper -- cat /opt/printer_data/confi
 | Palpeur | répétabilité σ = 0.002–0.003 mm | `PROBE_ACCURACY SAMPLES=20` — 15/11/2026 |
 | **Z offset** (`[bltouch] z_offset`) | **2.470** | échelles de Z (voir plus bas) — 15/11/2026 |
 | Maillage | profil `g10_60`, 50×50 points | `MESH_PLATEAU` — 15/11/2026 |
-| Input shaper | X mzv 64 Hz · Y 3hump_ei 65.4 Hz | mesure ADXL antérieure |
+| Input shaper | X mzv 64.8 Hz · Y mzv 46 Hz | `SHAPER_CALIBRATE` ×2 — 16/11/2026 (voir plus bas) |
+| Accélération max | 5000 mm/s² (Klipper + profils Orca) | limite conseillée pour Y ≈ 6000 — 16/11/2026 |
 | Pressure advance | 0.055 (générique) | **à étalonner** |
 | Flow, rétraction, température, débit max | — | **à étalonner** (tests intégrés d'OrcaSlicer) |
 
@@ -85,6 +86,22 @@ Validé avec deux « échelles » : 5 carrés d'une couche de 0.20 mm, chacun av
 - Mesurer une couche fine **avec le bout** du pied à coulisse : les grands becs prennent les crêtes
   et le bourrelet (0.45 lu pour une couche de 0.20).
 
+### Input shaper
+
+Mesures du 16/11/2026, plateau à Z 80 au centre (accéléromètre sur un support déporté) :
+
+- **X** : un seul pic net à 62–65 Hz, sans couplage avec les autres axes → mzv 64.8 Hz.
+- **Y** : pic principal à 43 Hz, remonté à **46 Hz** après resserrage des roues excentriques.
+  Pic **vertical** à ~90 Hz (2× le principal, surtout en Z) attribué au support de l'accéléromètre
+  qui fait levier → ignoré ; Klipper proposait 2hump_ei 91 Hz à cause de ce pic, on garde mzv 46 Hz.
+- Ancienne valeur (3hump_ei 65 Hz sur Y) incohérente avec ces mesures.
+- **À refaire** avec la future tête custom (accéléromètre près de la buse, CR-Touch déplacé).
+
+Procédure : décommenter `[include PIS.cfg]`, `FIRMWARE_RESTART`, `ACCELEROMETER_QUERY`, `G28`,
+`SHAPER_CALIBRATE`, reporter dans `[input_shaper]`, recommenter l'include.
+`AXES_MAP_CALIBRATION` n'existe pas dans cette version : l'`axes_map` a été vérifié en
+enregistrant des mouvements X/Y (`ACCELEROMETER_MEASURE`).
+
 ## Macros utiles
 
 | Macro | Rôle |
@@ -94,11 +111,51 @@ Validé avec deux « échelles » : 5 carrés d'une couche de 0.20 mm, chacun av
 | `MESH_PLATEAU T_BED= COUNT=` | grand maillage sauvegardé du plateau |
 | `LOAD_FILAMENT` / `UNLOAD_FILAMENT` / `M600` | gestion du filament |
 
-Gcode de démarrage du profil imprimante OrcaSlicer :
+## Profils OrcaSlicer
+
+Trois presets utilisateur, versionnés dans [`kubernetes/orcaslicer/profiles/`](../orcaslicer/profiles/)
+et hérités des presets système Creality (seules les différences sont stockées) :
+
+| Type | Nom | Hérite de | Points clés |
+|---|---|---|---|
+| Imprimante | `Ender-5 S1 Klipper` | `Creality Ender-5 S1 0.4 nozzle` | flavor Klipper, `PRINT_START`/`PRINT_END`, vignettes Mainsail, accel 5000, v 250, rétraction 0.8 mm @ 40 mm/s (provisoire) |
+| Filament | `Ender PLA+` | `Creality Generic PLA` | 205 °C (1re couche 210), plateau 60 °C (tous types de plaque → maillage `g10_60`), débit max 15 mm³/s et flow 0.98 provisoires, PA géré par Klipper |
+| Impression | `0.20mm Ender-5 S1 Klipper` | `0.20mm Standard @Creality Ender5S1` | vitesses reprises du profil Cura « parfait » (200 mm/s remplissage/parois int., 120 ext.), accel 5000 (3000 paroi ext./dessus, 500 1re couche), objets étiquetés (`EXCLUDE_OBJECT`) |
+
+Installer / mettre à jour (Orca lit les presets au démarrage) :
+
+```bash
+U=/config/.config/OrcaSlicer/user/default
+cd kubernetes/orcaslicer/profiles
+for f in */*.json; do kubectl -n orcaslicer exec -i deploy/orcaslicer -- sh -c "cat > '$U/$f'" < "$f"; done
+kubectl -n orcaslicer rollout restart deploy/orcaslicer
+```
+
+Après une modification dans l'interface (« Enregistrer »), recopier le fichier du volume vers le dépôt
+(`kubectl -n orcaslicer exec deploy/orcaslicer -- cat "$U/<type>/<nom>.json"`).
+
+Gcode de démarrage du profil imprimante :
 
 ```
 PRINT_START T_BED=[bed_temperature_initial_layer_single] T_EXTRUDER=[nozzle_temperature_initial_layer] SIZE={first_layer_print_min[0]}_{first_layer_print_min[1]}_{first_layer_print_max[0]}_{first_layer_print_max[1]}
 ```
+
+## Étalonnage du filament (menu *Calibration* d'OrcaSlicer)
+
+Ordre à suivre, chaque test avec les trois presets ci-dessus sélectionnés ; reporter le résultat
+dans le preset indiqué puis dans le tableau « Étalonnage » :
+
+1. **Débit volumétrique max** (vers 220 °C) → `filament_max_volumetric_speed` (~80 % du point
+   où ça casse) : fixe le plafond de vitesse.
+2. **Température** (tour 230 → 190 °C) imprimée au débit visé → `nozzle_temperature`.
+3. **Flow ratio** (passe 1 puis passe 2) → `filament_flow_ratio`.
+4. **Pressure advance** (motif *Pattern*, PA 0 → 0.1, pas 0.005) à l'accélération finale →
+   `pressure_advance` dans `printer.cfg` (`[extruder]`), le PA d'Orca reste désactivé.
+5. **Rétraction** (tour 0 → 2 mm, pas 0.1) → `retraction_length` de l'imprimante.
+6. Monter les vitesses du profil d'impression jusqu'au débit max, impression de contrôle.
+
+Pendant les tests, baisser le temps de couche minimum du filament (`slow_down_layer_time`) pour que
+les petites pièces ne soient pas ralenties.
 
 ## Pièges connus
 

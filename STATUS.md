@@ -1,6 +1,6 @@
 # Homelab — état actuel
 
-_Mis à jour le 15/11/2026._
+_Mis à jour le 16/11/2026._
 
 Cluster **K3s mono-nœud** sur un Raspberry Pi 5, piloté par des manifests Kubernetes
 versionnés dans ce dépôt (`kubectl apply -k kubernetes/<service>`). Un PC x86 avec GPU
@@ -79,11 +79,29 @@ Creality Ender-5 S1 sous Klipper, plateau G10 fixe avec maillage 50×50 sauvegar
 OrcaSlicer (Cura n'est plus utilisé). Matériel, étalonnage, procédures et pièges :
 **[`kubernetes/klipper/PRINTER.md`](kubernetes/klipper/PRINTER.md)**.
 
-- La config active vit dans le volume du pod (`config/` du dépôt = seed du premier démarrage) :
-  garder les deux synchronisées (voir PRINTER.md).
-- Après un redémarrage de l'imprimante ou du pod : `FIRMWARE_RESTART` dans Mainsail.
-- OrcaSlicer exporte dans `/gcodes` (= `/srv/files/3d/gcodes`, visible dans Mainsail) ou envoie
-  directement à `http://klipper.klipper.svc.cluster.local:7125`.
+**Objectif** : imprimer nettement plus vite que le profil Cura d'origine tout en améliorant la qualité.
+
+**Où on en est (16/11/2026)** :
+
+| Étape | État |
+|---|---|
+| PID, rotation_distance, Z offset (2.470), maillage `g10_60` | ✅ 15/11 |
+| Profils Orca `Ender-5 S1 Klipper` / `Ender PLA+` / `0.20mm Ender-5 S1 Klipper` (`kubernetes/orcaslicer/profiles/`) | ✅ |
+| Input shaper (X mzv 64.8 · Y mzv 46) + accel max 2000 → **5000** (Klipper + Orca) | ✅ provisoire (ADXL sur support déporté) |
+| 1. Débit volumétrique max (Orca *Max flowrate*, 8 → 24 mm³/s, pas 0.5, buse 220 °C) | ⏳ **impression en cours** — lire la hauteur du 1er défaut : débit = 8 + h × 0.5, garder ~80 % |
+| 2. Tour de température au débit visé | à faire |
+| 3. Flow ratio (passes 1 et 2) | à faire |
+| 4. Pressure advance (à accel 5000) → `printer.cfg` | à faire (0.055 générique) |
+| 5. Rétraction (0.8 mm provisoire) | à faire |
+| 6. Monter les vitesses du profil jusqu'au débit max + impression de contrôle | à faire |
+| Refaire l'input shaper avec la future tête custom (ADXL près de la buse, CR-Touch déplacé) | plus tard |
+
+- Profils Orca : modifier dans l'interface puis recopier le JSON du volume dans le dépôt (voir PRINTER.md).
+- Accéléromètre : `[include PIS.cfg]` **commenté** hors mesure (sinon Klipper ne démarre pas s'il est débranché).
+- La config Klipper active vit dans le volume du pod (`config/` du dépôt = seed) : garder les deux synchronisées.
+- Après un redémarrage de l'imprimante, du pod ou un débranchement USB : `FIRMWARE_RESTART` dans Mainsail.
+- Envoi des gcodes : connexion « Octo/Klipper » vers `http://klipper.klipper.svc.cluster.local:7125`
+  dans Orca, ou export dans `/gcodes` (= `/srv/files/3d/gcodes`, visible dans Mainsail et Nextcloud).
 
 ## Stockage
 
@@ -145,8 +163,8 @@ kubectl -n immich exec deploy/server -- immich-admin enable-password-login   # s
 - [ ] Ajouter le worker `sleeper` (Tailscale + K3s agent, taint on-demand) ; y déplacer le ML Immich (GPU)
 - [ ] Certificats HTTPS pour l'accès via Tailscale (cert-manager + DNS Cloudflare)
 - [ ] Désactiver la connexion par mot de passe dans Immich une fois l'OIDC validé
-- [ ] Imprimante : étalonner flow, pressure advance, rétraction, température, débit max ; créer les
-      profils OrcaSlicer (imprimante / Ender PLA+ / impression) — voir `kubernetes/klipper/PRINTER.md`
+- [ ] Imprimante : finir l'étalonnage filament (débit max en cours → température → flow → PA → rétraction → vitesses) — voir « Imprimante 3D » ci-dessus
+- [ ] Imprimante : tête custom (CR-Touch replacé, ADXL près de la buse) puis refaire l'input shaper
 - [ ] Déplacer OrcaSlicer sur `sleeper` quand il sera dans le cluster (interface lente sur le Pi)
 - [ ] Services de l'ancien cluster pas encore migrés (manifests à reprendre dans `kubernetes/`) :
       Vaultwarden, Stalwart + SnappyMail, STF, OpenClaw, Ollama + Open WebUI (GPU), PostgreSQL partagé
